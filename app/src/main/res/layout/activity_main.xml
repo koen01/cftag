@@ -1,0 +1,685 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:fillViewport="true"
+    tools:openDrawer="end">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background_main"
+        android:fitsSystemWindows="true"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/main"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxWidth="500dp"
+            android:layout_gravity="center|fill_vertical"
+            android:orientation="vertical"
+            android:padding="16dp"
+            tools:context=".MainActivity">
+
+            <!-- ── Header Row ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="4dp">
+
+                <ImageView
+                    android:id="@+id/menubutton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/twotone_menu_24"
+                    app:tint="@color/text_main" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/app_name"
+                    android:textColor="@color/text_main"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/deletebutton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/twotone_delete_24"
+                    app:tint="@color/primary_brand" />
+
+                <ImageView
+                    android:id="@+id/editbutton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/twotone_edit_24"
+                    app:tint="@color/primary_brand" />
+
+                <ImageView
+                    android:id="@+id/addbutton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/twotone_add_24"
+                    app:tint="@color/primary_brand" />
+
+            </LinearLayout>
+
+            <!-- ── FILAMENT OPTIONS section header ── -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/filament_options"
+                android:textColor="@color/text_alt"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- ── Row 1: Printer + Brand ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <!-- Printer -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <Spinner
+                        android:id="@+id/type"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:spinnerMode="dialog"
+                        app:backgroundTint="@color/text_main"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/typeborder"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/border"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/lbltype"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/hint_background"
+                        android:includeFontPadding="false"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="@string/printer"
+                        android:textColor="@color/primary_brand"
+                        android:textSize="12sp"
+                        app:layout_constraintBottom_toTopOf="@+id/typeborder"
+                        app:layout_constraintStart_toStartOf="@+id/typeborder"
+                        app:layout_constraintTop_toTopOf="@+id/typeborder" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- Brand -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp">
+
+                    <Spinner
+                        android:id="@+id/brand"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:spinnerMode="dialog"
+                        app:backgroundTint="@color/text_main"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/brandborder"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/border"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/lblbrand"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/hint_background"
+                        android:includeFontPadding="false"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="@string/brand"
+                        android:textColor="@color/primary_brand"
+                        android:textSize="12sp"
+                        app:layout_constraintBottom_toTopOf="@+id/brandborder"
+                        app:layout_constraintStart_toStartOf="@+id/brandborder"
+                        app:layout_constraintTop_toTopOf="@+id/brandborder" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </LinearLayout>
+
+            <!-- ── Row 2: Type (left only) ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <!-- Type -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <Spinner
+                        android:id="@+id/material"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:spinnerMode="dialog"
+                        app:backgroundTint="@color/text_main"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/materialborder"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/border"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/lblmaterial"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/hint_background"
+                        android:includeFontPadding="false"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="@string/type"
+                        android:textColor="@color/primary_brand"
+                        android:textSize="12sp"
+                        app:layout_constraintBottom_toTopOf="@+id/materialborder"
+                        app:layout_constraintStart_toStartOf="@+id/materialborder"
+                        app:layout_constraintTop_toTopOf="@+id/materialborder" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- Empty right half -->
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+            <!-- ── Row 3: Size + Color ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <!-- Size -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <Spinner
+                        android:id="@+id/spoolsize"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:spinnerMode="dialog"
+                        app:backgroundTint="@color/text_main"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/sizeborder"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/border"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/lblsize"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/hint_background"
+                        android:includeFontPadding="false"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="@string/size"
+                        android:textColor="@color/primary_brand"
+                        android:textSize="12sp"
+                        app:layout_constraintBottom_toTopOf="@+id/sizeborder"
+                        app:layout_constraintStart_toStartOf="@+id/sizeborder"
+                        app:layout_constraintTop_toTopOf="@+id/sizeborder" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- Color -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp">
+
+                    <Spinner
+                        android:id="@+id/colorspin"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:spinnerMode="dialog"
+                        app:backgroundTint="@color/text_main"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/colorborder"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/border"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/colorview"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="46dp"
+                        app:layout_constraintEnd_toEndOf="@+id/colorborder"
+                        app:layout_constraintStart_toStartOf="@+id/colorborder"
+                        app:layout_constraintTop_toTopOf="@+id/colorborder" />
+
+                    <TextView
+                        android:id="@+id/txtcolor"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="46dp"
+                        android:background="#00000000"
+                        android:gravity="start|center"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="1dp"
+                        android:singleLine="true"
+                        android:text="#000000"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toEndOf="@+id/colorborder"
+                        app:layout_constraintStart_toStartOf="@+id/colorborder"
+                        app:layout_constraintTop_toTopOf="@+id/colorborder" />
+
+                    <TextView
+                        android:id="@+id/lblcolor"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/hint_background"
+                        android:includeFontPadding="false"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="@string/color"
+                        android:textColor="@color/primary_brand"
+                        android:textSize="12sp"
+                        app:layout_constraintBottom_toTopOf="@+id/colorborder"
+                        app:layout_constraintStart_toStartOf="@+id/colorborder"
+                        app:layout_constraintTop_toTopOf="@+id/colorborder" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </LinearLayout>
+
+            <!-- ── RFID Tag ID card ── -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <View
+                    android:id="@+id/tagIdBorder"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/border"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:id="@+id/lbltagid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tag_id"
+                        android:textColor="@color/text_main"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tagid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/_00_00_00_00"
+                        android:textColor="@color/text_main"
+                        android:textSize="18sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/hint_background"
+                    android:includeFontPadding="false"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text="@string/rfid_tag_id_label"
+                    android:textColor="@color/primary_brand"
+                    android:textSize="12sp"
+                    app:layout_constraintBottom_toTopOf="@+id/tagIdBorder"
+                    app:layout_constraintStart_toStartOf="@+id/tagIdBorder"
+                    app:layout_constraintTop_toTopOf="@+id/tagIdBorder" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- ── Read button ── -->
+            <Button
+                android:id="@+id/readbutton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:padding="12dp"
+                android:text="@string/read"
+                android:textColor="@color/text_inverted"
+                android:textSize="15sp"
+                tools:ignore="ButtonStyle" />
+
+            <!-- ── SPOOLMAN OPTIONS section ── -->
+            <LinearLayout
+                android:id="@+id/spoolman_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="@string/spoolman_options"
+                    android:textColor="@color/text_alt"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <!-- Card 1: Write & Create -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/rounded_card_background"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_write_create_title"
+                        android:textColor="@color/text_alt"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:importantForAccessibility="no"
+                            app:srcCompat="@drawable/twotone_nfc_24"
+                            app:tint="@color/text_main" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/card_write_create_line1"
+                                android:textColor="@color/text_main"
+                                android:textSize="17sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/card_write_create_line2"
+                                android:textColor="@color/text_main"
+                                android:textSize="17sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnWriteAndCreate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:padding="12dp"
+                        android:text="@string/btn_write_and_create"
+                        android:textColor="@color/text_inverted"
+                        tools:ignore="ButtonStyle" />
+
+                </LinearLayout>
+
+                <!-- Card 2: Link to existing -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/rounded_card_background"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_link_existing_title"
+                        android:textColor="@color/text_alt"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:importantForAccessibility="no"
+                            app:srcCompat="@drawable/twotone_contactless_24"
+                            app:tint="@color/text_main" />
+
+                        <!-- Spoolman spool picker spinner with floating label -->
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp">
+
+                            <Spinner
+                                android:id="@+id/spoolmanSpinner"
+                                android:layout_width="0dp"
+                                android:layout_height="56dp"
+                                android:layout_marginTop="10dp"
+                                android:spinnerMode="dialog"
+                                app:backgroundTint="@color/text_main"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent" />
+
+                            <View
+                                android:id="@+id/spoolmanBorder"
+                                android:layout_width="0dp"
+                                android:layout_height="56dp"
+                                android:layout_marginTop="10dp"
+                                android:background="@drawable/border"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:background="@drawable/hint_background"
+                                android:includeFontPadding="false"
+                                android:paddingStart="4dp"
+                                android:paddingEnd="4dp"
+                                android:text="@string/spoolman_spinner_label"
+                                android:textColor="@color/primary_brand"
+                                android:textSize="12sp"
+                                app:layout_constraintBottom_toTopOf="@+id/spoolmanBorder"
+                                app:layout_constraintStart_toStartOf="@+id/spoolmanBorder"
+                                app:layout_constraintTop_toTopOf="@+id/spoolmanBorder" />
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnLinkExisting"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:padding="12dp"
+                        android:text="@string/btn_link_existing"
+                        android:textColor="@color/text_inverted"
+                        tools:ignore="ButtonStyle" />
+
+                </LinearLayout>
+
+                <!-- Status line -->
+                <TextView
+                    android:id="@+id/txtSpoolStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:textColor="@color/text_main"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- Write button (visible when Spoolman disabled) -->
+            <Button
+                android:id="@+id/writebutton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                android:text="@string/write"
+                android:textColor="@color/text_inverted"
+                tools:ignore="ButtonStyle" />
+
+            <!-- Message overlay (unused but kept for compatibility) -->
+            <TextView
+                android:id="@+id/txtmsg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="#FA6F6F"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="false"
+        android:theme="@style/Theme.MaterialComponents.DayNight"
+        app:itemTextAppearance="@style/NavigationDrawerText"
+        app:headerLayout="@layout/nav_header_main"
+        app:menu="@menu/activity_main_drawer" />
+</androidx.drawerlayout.widget.DrawerLayout>

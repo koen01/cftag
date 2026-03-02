@@ -1,0 +1,29 @@
+[versions]
+activityVersion = "1.0.8"
+agp = "9.0.1"
+appcompatVersion = "1.6.1"
+constraintlayoutVersion = "2.1.4"
+jsch = "2.27.0"
+material = "1.12.0"
+preference = "1.2.1"
+roomRuntime = "2.6.1"
+flexbox = "3.0.0"
+materialVersion = "1.13.0"
+documentfileVersion = "1.1.0"
+
+[libraries]
+activity-v108 = { module = "androidx.activity:activity", version.ref = "activityVersion" }
+appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
+constraintlayout-v214 = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayoutVersion" }
+jsch = { module = "com.github.mwiede:jsch", version.ref = "jsch" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+preference = { module = "androidx.preference:preference", version.ref = "preference" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
+google-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
+documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfileVersion" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+

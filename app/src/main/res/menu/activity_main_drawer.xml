@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+    <item android:title="@string/app">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/twotone_settings_24"
+                android:title="@string/open_settings" />
+        </menu>
+    </item>
+    <item android:title="@string/printer_database">
+        <menu>
+            <item
+                android:id="@+id/nav_manage"
+                android:icon="@drawable/twotone_dashboard_customize_24"
+                android:title="@string/manage_printers" />
+            <item
+                android:id="@+id/nav_upload"
+                android:icon="@drawable/twotone_upload_24"
+                android:title="@string/upload_database" />
+            <item
+                android:id="@+id/nav_download"
+                android:icon="@drawable/twotone_file_download_24"
+                android:title="@string/download_database" />
+        </menu>
+    </item>
+
+    <item android:title="@string/app_database">
+        <menu>
+            <item
+                android:id="@+id/nav_export"
+                android:icon="@drawable/twotone_export_24"
+                android:title="@string/export_app_database" />
+            <item
+                android:id="@+id/nav_import"
+                android:icon="@drawable/twotone_import_24"
+                android:title="@string/import_app_database" />
+        </menu>
+    </item>
+
+    <item android:title="@string/rfid_functions">
+        <menu>
+            <item
+                android:id="@+id/nav_format"
+                android:icon="@drawable/twotone_layers_clear_24"
+                android:title="@string/format_tag" />
+            <item
+                android:id="@+id/nav_manual"
+                android:icon="@drawable/twotone_settings_applications_24"
+                android:title="@string/custom_tag_data_input" />
+            <item
+                android:id="@+id/nav_memory"
+                android:icon="@drawable/twotone_memory_24"
+                android:title="@string/read_tag_memory" />
+        </menu>
+    </item>
+
+</menu>
