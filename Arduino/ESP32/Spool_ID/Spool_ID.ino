@@ -496,11 +496,14 @@ void handleFetchDb()
     return;
   }
 
-  // Debug: return first 300 chars so we can see the actual API response structure
-  if (webServer.hasArg("debug")) {
-    webServer.send(200, "text/plain", body.substring(0, 300));
+  // Always return raw snippet at debug URL so we can see actual API structure
+  if (webServer.uri().endsWith("fetchdb") && webServer.arg("debug") == "1") {
+    webServer.send(200, "text/plain", body.substring(0, 500));
     return;
   }
+
+  // Keep first 300 chars for error reporting before we free the body
+  String bodySnippet = body.substring(0, 300);
 
   // Parse, keeping only the fields the web UI needs
   JsonDocument filter;
@@ -516,17 +519,14 @@ void handleFetchDb()
 
   if (err) {
     webServer.send(500, "application/json",
-      String("{\"error\":\"Parse: ") + err.c_str() + "\"}");
+      String("{\"error\":\"Parse: ") + err.c_str() + "\",\"raw\":\"" + bodySnippet + "\"}");
     return;
   }
 
   JsonArray list = doc["result"]["list"].as<JsonArray>();
   if (list.isNull() || list.size() == 0) {
-    String snippet;
-    serializeJson(doc, snippet);
-    if (snippet.length() > 300) snippet = snippet.substring(0, 300);
     webServer.send(500, "application/json",
-      "{\"error\":\"No materials matched\",\"doc\":" + snippet + "}");
+      "{\"error\":\"No materials matched\",\"raw\":\"" + bodySnippet + "\"}");
     return;
   }
 
