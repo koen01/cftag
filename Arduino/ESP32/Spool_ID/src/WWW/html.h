@@ -94,6 +94,12 @@ static const char indexData[] PROGMEM = R"rawhtml(
         <label>Select Spool</label>
         <select id="spool-select"><option value="">Loading spools…</option></select>
         <div id="spool-detail" class="tag-data" style="margin-top:6px;"></div>
+        <div id="db-link" style="display:none">
+          <label>Brand (from DB)</label>
+          <select id="link-db-brand" onchange="filterDbFilaments('link-db-brand','link-db-filament')"><option value="">— brand —</option></select>
+          <label>Filament (from DB)</label>
+          <select id="link-db-filament" onchange="applyDbFilament('link-db-filament','link-vendor-id','link-filament-id')"><option value="">— filament —</option></select>
+        </div>
         <label>Vendor ID (4-char hex)</label>
         <input type="text" id="link-vendor-id" value="0276" maxlength="4" placeholder="0276">
         <label>Filament ID (6-char hex)</label>
@@ -114,6 +120,12 @@ static const char indexData[] PROGMEM = R"rawhtml(
 
       <!-- Tab: create new -->
       <div class="tab-panel" id="tab-create">
+        <div id="db-create" style="display:none">
+          <label>Brand (from DB)</label>
+          <select id="create-db-brand" onchange="filterDbFilaments('create-db-brand','create-db-filament')"><option value="">— brand —</option></select>
+          <label>Filament (from DB)</label>
+          <select id="create-db-filament" onchange="applyDbFilamentCreate()"><option value="">— filament —</option></select>
+        </div>
         <label>Vendor / Brand</label>
         <input type="text" id="new-vendor" placeholder="e.g. Creality">
         <label>Material</label>
@@ -146,8 +158,16 @@ static const char indexData[] PROGMEM = R"rawhtml(
   <!-- Manual section -->
   <div class="card">
     <div class="card-title">Manual Write (no Spoolman)</div>
+    <div id="db-manual" style="display:none">
+      <label>Brand (from DB)</label>
+      <select id="m-db-brand" onchange="filterDbFilaments('m-db-brand','m-db-filament')"><option value="">— brand —</option></select>
+      <label>Filament (from DB)</label>
+      <select id="m-db-filament" onchange="applyDbFilamentManual()"><option value="">— filament —</option></select>
+    </div>
     <label>Material Type (3–5 chars)</label>
     <input type="text" id="m-type" value="PLA" maxlength="5">
+    <input type="hidden" id="m-filament-id" value="">
+    <input type="hidden" id="m-vendor-id" value="">
     <div class="row">
       <div>
         <label>Color</label>
@@ -217,6 +237,97 @@ static const char indexData[] PROGMEM = R"rawhtml(
 let smEnabled = false;
 let spools = [];
 let lastEventSeen = '';
+let matDb = []; // [{id,name,brand,vendorId}]
+
+// ── Material DB ─────────────────────────────────────────────────────────────
+function loadMaterialDb() {
+  fetch('/material_database.json').then(r=>{
+    if (!r.ok) return;
+    return r.json();
+  }).then(data=>{
+    if (!data) return;
+    const list = data?.result?.list || data?.list || (Array.isArray(data) ? data : []);
+    matDb = list.map(item=>{
+      const base = item.base || item;
+      return { id: base.id||'', name: base.name||'', brand: base.brand||'', vendorId: base.vendorId||'0276' };
+    }).filter(x=>x.id && x.name && x.brand);
+    if (matDb.length === 0) return;
+    // Show DB pickers and populate brand dropdowns
+    ['db-link','db-create','db-manual'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+    populateBrandSelect('link-db-brand');
+    populateBrandSelect('create-db-brand');
+    populateBrandSelect('m-db-brand');
+  }).catch(()=>{});
+}
+
+function populateBrandSelect(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const brands = [...new Set(matDb.map(x=>x.brand))].sort();
+  sel.innerHTML = '<option value="">— brand —</option>';
+  brands.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; sel.appendChild(o); });
+}
+
+function filterDbFilaments(brandSelId, filamentSelId) {
+  const brand = document.getElementById(brandSelId).value;
+  const sel = document.getElementById(filamentSelId);
+  sel.innerHTML = '<option value="">— filament —</option>';
+  const filtered = brand ? matDb.filter(x=>x.brand===brand) : matDb;
+  filtered.sort((a,b)=>a.name.localeCompare(b.name)).forEach(x=>{
+    const o = document.createElement('option');
+    o.value = x.id;
+    o.dataset.brand = x.brand;
+    o.dataset.name = x.name;
+    o.dataset.vendorId = x.vendorId;
+    o.textContent = x.name + ' [' + x.id + ']';
+    sel.appendChild(o);
+  });
+}
+
+// Apply selected DB filament to link/create vendor+filament ID fields
+function applyDbFilament(filamentSelId, vendorIdFieldId, filamentIdFieldId) {
+  const sel = document.getElementById(filamentSelId);
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById(vendorIdFieldId).value = opt.dataset.vendorId || '0276';
+  document.getElementById(filamentIdFieldId).value = opt.value;
+}
+
+// Apply selected DB filament to "Create New Spool" tab
+function applyDbFilamentCreate() {
+  const sel = document.getElementById('create-db-filament');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById('new-vendor-id').value = opt.dataset.vendorId || '0276';
+  document.getElementById('new-filament-id').value = opt.value;
+  // Also fill vendor name and material from the DB name
+  const entry = matDb.find(x=>x.id===opt.value);
+  if (entry) {
+    document.getElementById('new-vendor').value = entry.brand;
+    // Extract material type (first word of name, e.g. "PLA" from "PLA Hyper")
+    const mat = entry.name.split(' ')[0];
+    document.getElementById('new-material').value = mat;
+  }
+}
+
+// Apply selected DB filament to manual write section
+function applyDbFilamentManual() {
+  const sel = document.getElementById('m-db-filament');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById('m-filament-id').value = opt.value;
+  document.getElementById('m-vendor-id').value = opt.dataset.vendorId || '0276';
+  const entry = matDb.find(x=>x.id===opt.value);
+  if (entry) {
+    const mat = entry.name.split(' ')[0].toUpperCase().substring(0,5);
+    document.getElementById('m-type').value = mat;
+  }
+}
+
+loadMaterialDb();
 
 // ── Tab switching ───────────────────────────────────────────────────────────
 function switchTab(name) {
@@ -379,6 +490,11 @@ function manualWrite() {
   const materialColor = document.getElementById('m-color').value;
   const materialWeight= document.getElementById('m-weight').value;
   const params = new URLSearchParams({materialType, materialColor, materialWeight});
+  // Include DB-derived filamentId/vendorId if a DB filament was selected
+  const fid = document.getElementById('m-filament-id').value;
+  const vid = document.getElementById('m-vendor-id').value;
+  if (fid.length === 6) params.set('filamentId', fid);
+  if (vid.length === 4) params.set('vendorId', vid);
   fetch('/spooldata', {method:'POST', body:params}).then(r=>{
     if (r.ok) showStatus('manual-status','✓ Set! Tap tag to write.','ok');
     else showStatus('manual-status','Error','err');

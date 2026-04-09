@@ -18,8 +18,9 @@ Install via **Sketch → Include Library → Manage Libraries**:
 
 | Library | Author |
 |---|---|
-| MFRC522 | GithubCommunity |
 | ArduinoJson | Benoit Blanchon |
+
+> **MFRC522** is bundled in `src/MFRC522/` — do **not** install it separately.
 
 ## Build & Flash
 

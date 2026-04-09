@@ -4,8 +4,8 @@
  * Adds Spoolman integration and tag reading on top of the original write functionality.
  *
  * Required libraries (install via Arduino Library Manager):
- *   - MFRC522 by GithubCommunity
  *   - ArduinoJson by Benoit Blanchon
+ * (MFRC522 is bundled in src/MFRC522/ — do not install separately)
  *
  * Hardware: ESP32 + RC522 RFID (SPI: SCK=18, MISO=19, MOSI=23, SS=5, RST=21)
  *           Speaker/buzzer on GPIO 27
@@ -381,8 +381,17 @@ void handleSpoolData()
     webServer.send(417, "text/plain", "Expectation Failed"); return;
   }
   String color      = webServer.arg("materialColor"); color.replace("#", "");
-  String filamentId = "1" + webServer.arg("materialType");
-  String vendorId   = "0276";
+  // Accept explicit 6-char hex filamentId from DB, or build from materialType
+  String filamentId;
+  if (webServer.hasArg("filamentId") && webServer.arg("filamentId").length() == 6) {
+    filamentId = webServer.arg("filamentId"); filamentId.toUpperCase();
+  } else {
+    filamentId = "1" + webServer.arg("materialType");
+  }
+  String vendorId = "0276";
+  if (webServer.hasArg("vendorId") && webServer.arg("vendorId").length() == 4) {
+    vendorId = webServer.arg("vendorId"); vendorId.toUpperCase();
+  }
   String filamentLen = getFilamentLength(webServer.arg("materialWeight").toInt());
   String serialNum  = String(random(100000, 999999));
   spoolData = "AB124" + vendorId + "A2" + filamentId + "0" + color + filamentLen + serialNum + "000000" + "00000000";
@@ -425,6 +434,7 @@ void handleDb()
 {
   if (LittleFS.exists("/matdb.gz")) {
     File f = LittleFS.open("/matdb.gz", "r");
+    webServer.sendHeader("Content-Encoding", "gzip");
     webServer.streamFile(f, "application/json"); f.close();
   } else {
     webServer.send(404, "text/plain", "No database");
