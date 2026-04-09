@@ -20,6 +20,7 @@
 #include <LittleFS.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <ArduinoJson.h>
 #include "src/includes.h"
 
 // ── Pin definitions ──────────────────────────────────────────────────────────
