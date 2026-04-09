@@ -187,6 +187,8 @@ static const char indexData[] PROGMEM = R"rawhtml(
     <div class="card-title">Device Updates</div>
     <button class="secondary" onclick="document.getElementById('fw-dialog').showModal()">Upload Firmware (.bin)</button>
     <button class="secondary" onclick="document.getElementById('db-dialog').showModal()">Upload Material DB (.gz)</button>
+    <button class="secondary" id="btn-fetchdb" onclick="fetchDb()">Fetch Material DB from Creality Cloud</button>
+    <div id="fetchdb-msg" class="sm-status" style="display:none;margin-top:8px;"></div>
   </div>
 
 </div><!-- /container -->
@@ -532,6 +534,25 @@ function uploadDb() {
     f.arrayBuffer().then(ab=>{ writer.write(ab); writer.close(); });
     new Response(cs.readable).blob().then(processUpload);
   }
+}
+
+// ── Fetch DB from Creality Cloud ────────────────────────────────────────────
+function fetchDb() {
+  const btn = document.getElementById('btn-fetchdb');
+  btn.disabled = true;
+  showStatus('fetchdb-msg', 'Fetching from Creality Cloud\u2026', 'info');
+  fetch('/api/fetchdb').then(r=>r.json()).then(d=>{
+    btn.disabled = false;
+    if (d.ok) {
+      showStatus('fetchdb-msg', '\u2713 Fetched ' + d.count + ' materials. Reloading\u2026', 'ok');
+      setTimeout(()=>{ loadMaterialDb(); }, 1500);
+    } else {
+      showStatus('fetchdb-msg', '\u2717 ' + (d.error||'Unknown error'), 'err');
+    }
+  }).catch(()=>{
+    btn.disabled = false;
+    showStatus('fetchdb-msg', '\u2717 Request failed \u2014 check WiFi connection', 'err');
+  });
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────

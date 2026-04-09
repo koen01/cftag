@@ -19,6 +19,7 @@
 #include <Update.h>
 #include <LittleFS.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include "src/includes.h"
 
 // ── Pin definitions ──────────────────────────────────────────────────────────
@@ -436,9 +437,116 @@ void handleDb()
     File f = LittleFS.open("/matdb.gz", "r");
     webServer.sendHeader("Content-Encoding", "gzip");
     webServer.streamFile(f, "application/json"); f.close();
+  } else if (LittleFS.exists("/matdb.json")) {
+    File f = LittleFS.open("/matdb.json", "r");
+    webServer.streamFile(f, "application/json"); f.close();
   } else {
     webServer.send(404, "text/plain", "No database");
   }
+}
+
+// GET /api/fetchdb — download material list from Creality cloud and store locally
+void handleFetchDb()
+{
+  if (WiFi.status() != WL_CONNECTED) {
+    webServer.send(503, "application/json", "{\"error\":\"WiFi not connected\"}");
+    return;
+  }
+
+  // Build a stable device UID from MAC
+  uint8_t mac[6]; WiFi.macAddress(mac);
+  char duid[37];
+  snprintf(duid, sizeof(duid),
+    "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+    mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],mac[0],mac[1],
+    mac[2],mac[3],mac[4],mac[5],mac[0],mac[1],mac[2],mac[3]);
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.begin(client, "https://api.crealitycloud.com/api/cxy/v2/slice/profile/official/materialList");
+  http.setTimeout(30000);
+  http.addHeader("Content-Type",    "application/json");
+  http.addHeader("__CXY_BRAND_",    "creality");
+  http.addHeader("__CXY_UID_",      "");
+  http.addHeader("__CXY_OS_LANG_",  "0");
+  http.addHeader("__CXY_DUID_",     duid);
+  http.addHeader("__CXY_APP_VER_",  "1.0");
+  http.addHeader("__CXY_APP_CH_",   "CP_Beta");
+  http.addHeader("__CXY_TIMEZONE_", "28800");
+  http.addHeader("__CXY_APP_ID_",   "creality_model");
+  http.addHeader("__CXY_REQUESTID_",duid);
+  http.addHeader("__CXY_PLATFORM_", "11");
+
+  int code = http.POST("{\"engineVersion\":\"3.0.0\",\"pageSize\":500}");
+  if (code != 200) {
+    http.end();
+    webServer.send(500, "application/json",
+      "{\"error\":\"Creality API returned " + String(code) + "\"}");
+    return;
+  }
+
+  // Stream-parse, keeping only the fields the web UI needs
+  JsonDocument filter;
+  filter["result"]["list"][0]["id"]       = true;
+  filter["result"]["list"][0]["name"]     = true;
+  filter["result"]["list"][0]["brand"]    = true;
+  filter["result"]["list"][0]["vendorId"] = true;
+
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, *http.getStreamPtr(),
+                                             DeserializationOption::Filter(filter));
+  http.end();
+
+  if (err) {
+    webServer.send(500, "application/json",
+      String("{\"error\":\"Parse: ") + err.c_str() + "\"}");
+    return;
+  }
+
+  JsonArray list = doc["result"]["list"].as<JsonArray>();
+  if (list.isNull() || list.size() == 0) {
+    webServer.send(500, "application/json", "{\"error\":\"No materials in response\"}");
+    return;
+  }
+
+  // Escape helper for JSON string values
+  auto esc = [](const char* s) -> String {
+    String out(s);
+    out.replace("\\", "\\\\");
+    out.replace("\"", "\\\"");
+    return out;
+  };
+
+  // Write directly to LittleFS to avoid building a large String in RAM
+  if (LittleFS.exists("/matdb.json")) LittleFS.remove("/matdb.json");
+  File f = LittleFS.open("/matdb.json", "w");
+  if (!f) {
+    webServer.send(500, "application/json", "{\"error\":\"Cannot write to filesystem\"}");
+    return;
+  }
+
+  f.print("{\"result\":{\"list\":[");
+  int count = 0;
+  for (JsonObject item : list) {
+    const char* id       = item["id"]       | "";
+    const char* name     = item["name"]     | "";
+    const char* brand    = item["brand"]    | "";
+    const char* vendorId = item["vendorId"] | "0276";
+    if (!id[0] || !name[0] || !brand[0]) continue;
+    if (count > 0) f.print(",");
+    f.print("{\"base\":{\"id\":\"");   f.print(esc(id));
+    f.print("\",\"name\":\"");         f.print(esc(name));
+    f.print("\",\"brand\":\"");        f.print(esc(brand));
+    f.print("\",\"vendorId\":\"");     f.print(esc(vendorId));
+    f.print("\"}}");
+    count++;
+  }
+  f.print("]}}");
+  f.close();
+
+  webServer.send(200, "application/json",
+    "{\"ok\":true,\"count\":" + String(count) + "}");
 }
 
 void handleDbUpdate()
@@ -508,6 +616,7 @@ void setup()
   webServer.on("/config",              HTTP_GET,  handleConfig);
   webServer.on("/config",              HTTP_POST, handleConfigP);
   webServer.on("/material_database.json", HTTP_GET, handleDb);
+  webServer.on("/api/fetchdb",            HTTP_GET, handleFetchDb);
   webServer.on("/update.html", HTTP_POST,
     []() { webServer.send(200, "text/plain", upMsg); delay(1000); ESP.restart(); },
     handleFwUpdate);
