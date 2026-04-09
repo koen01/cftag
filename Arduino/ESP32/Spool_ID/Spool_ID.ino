@@ -487,13 +487,18 @@ void handleFetchDb()
     return;
   }
 
-  // Read full body — getString() handles chunked transfer encoding correctly;
-  // getStreamPtr() returns raw TCP bytes which break ArduinoJson on chunked responses.
+  // Read full body — getString() handles chunked transfer encoding correctly
   String body = http.getString();
   http.end();
 
   if (body.isEmpty()) {
     webServer.send(500, "application/json", "{\"error\":\"Empty response from Creality\"}");
+    return;
+  }
+
+  // Debug: return first 300 chars so we can see the actual API response structure
+  if (webServer.hasArg("debug")) {
+    webServer.send(200, "text/plain", body.substring(0, 300));
     return;
   }
 
@@ -517,7 +522,11 @@ void handleFetchDb()
 
   JsonArray list = doc["result"]["list"].as<JsonArray>();
   if (list.isNull() || list.size() == 0) {
-    webServer.send(500, "application/json", "{\"error\":\"No materials in response\"}");
+    String snippet;
+    serializeJson(doc, snippet);
+    if (snippet.length() > 300) snippet = snippet.substring(0, 300);
+    webServer.send(500, "application/json",
+      "{\"error\":\"No materials matched\",\"doc\":" + snippet + "}");
     return;
   }
 
