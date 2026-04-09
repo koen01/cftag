@@ -454,13 +454,21 @@ void handleFetchDb()
     return;
   }
 
-  // Build a stable device UID from MAC
+  // Build stable UUIDs from MAC (duid) and MAC+1 (reqid)
   uint8_t mac[6]; WiFi.macAddress(mac);
-  char duid[37];
+  char duid[37], reqid[37];
   snprintf(duid, sizeof(duid),
     "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
     mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],mac[0],mac[1],
     mac[2],mac[3],mac[4],mac[5],mac[0],mac[1],mac[2],mac[3]);
+  snprintf(reqid, sizeof(reqid),
+    "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+    mac[5],mac[4],mac[3],mac[2],mac[1],mac[0],mac[5],mac[4],
+    mac[3],mac[2],mac[1],mac[0],mac[5],mac[4],mac[3],mac[2]);
+
+  static const char* UA = "BBL-Slicer/v01.09.03.50 (dark) Mozilla/5.0 (Windows NT 10.0;"
+                          " Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+                          " Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52";
 
   WiFiClientSecure client;
   client.setInsecure();
@@ -468,20 +476,20 @@ void handleFetchDb()
   http.begin(client, "https://api.crealitycloud.com/api/cxy/v2/slice/profile/official/materialList");
   http.setTimeout(30000);
   http.addHeader("Content-Type",    "application/json");
-  http.addHeader("User-Agent",      "CFtag/1.0 (ESP32)");
+  http.addHeader("User-Agent",      UA);
   http.addHeader("__CXY_BRAND_",    "creality");
   http.addHeader("__CXY_UID_",      "");
   http.addHeader("__CXY_OS_LANG_",  "0");
   http.addHeader("__CXY_DUID_",     duid);
   http.addHeader("__CXY_APP_VER_",  "1.0");
   http.addHeader("__CXY_APP_CH_",   "CP_Beta");
-  http.addHeader("__CXY_OS_VER_",   "CFtag/1.0 (ESP32)");
+  http.addHeader("__CXY_OS_VER_",   UA);
   http.addHeader("__CXY_TIMEZONE_", "28800");
   http.addHeader("__CXY_APP_ID_",   "creality_model");
-  http.addHeader("__CXY_REQUESTID_",duid);
+  http.addHeader("__CXY_REQUESTID_",reqid);
   http.addHeader("__CXY_PLATFORM_", "11");
 
-  int code = http.POST("{\"engineVersion\":\"3.0.0\",\"pageSize\":500,\"pageNum\":1}");
+  int code = http.POST("{\"engineVersion\":\"3.0.0\",\"pageSize\":500}");
   if (code != 200) {
     http.end();
     webServer.send(500, "application/json",
