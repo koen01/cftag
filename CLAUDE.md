@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**SpoolID** is an Android app (Java, package `dngsoftware.spoolid`) for reading and writing Creality K1/K2/Hi/CFS RFID filament spool tags using MIFARE Classic 1K NFC tags. The working directory for this project is `SpoolID/` — the git root also contains sibling directories (`../Android/`, `../Arduino/`, `../Windows/`) that hold related tooling, but this Claude session focuses on the Android app.
+**CFtag** has two components:
+
+1. **Android app** (Java, package `dngsoftware.spoolid`, applicationId `io.github.koen01.cftag`) for reading and writing Creality K1/K2/Hi/CFS RFID filament spool tags using MIFARE Classic 1K NFC tags. Integrates with [Spoolman](https://github.com/Donkie/Spoolman). Android module is under `app/`; Gradle commands run from the repo root.
+
+2. **ESP32 firmware** (`Arduino/ESP32/Spool_ID/`) — a drop-in replacement for the [K2-RFID ESP32 hardware](https://github.com/DnG-Crafts/K2-RFID/tree/main/Arduino/ESP32) (RC522 RFID reader). Serves a web interface that mirrors the Android app's functionality, including Spoolman integration. See `Arduino/ESP32/README.md`.
 
 ## Build Commands
 
@@ -61,6 +65,13 @@ Spoolman REST calls go through `performSmRequest()` in `MainActivity.java`; sett
 | `Filament.java` | Room entity: `filamentID`, `filamentName`, `filamentVendor`, `filamentParam` (full JSON) |
 | `ColorMatcher.java` | Loads `assets/colors.db` (zipped CSV) and finds nearest CSS color name by Euclidean RGB distance |
 | `PrinterManager.java` | Persists the printer list to `SharedPreferences` as a JSON array |
+| `PrinterOption.java` | Model for a printer entry in the printer list |
+| `SpoolItem.java` | Model for a Spoolman spool (id, name, color, remaining weight) |
+| `MaterialItem.java` | Model for a filament/material entry |
+| `SpoolPickerAdapter.java` | RecyclerView adapter for the searchable Spoolman spool picker dialog |
+| `SpoolSpinnerAdapter.java` | Spinner adapter for Spoolman spool selection |
+| `spinnerAdapter.java` / `tagAdapter.java` / `jsonAdapter.java` | Adapters for material spinner, tag list, and JSON viewer |
+| `tagItem.java` / `jsonItem.java` | Data models for tag and JSON list items |
 
 ### NFC Flow
 
@@ -75,7 +86,76 @@ Spoolman REST calls go through `performSmRequest()` in `MainActivity.java`; sett
 
 ### Network Security
 
-`res/xml/nsc.xml` configures `android:networkSecurityConfig` — likely allows cleartext for local Spoolman and printer SSH targets. The app uses JSch for SSH to the printer and plain `HttpURLConnection` for Spoolman REST.
+`res/xml/nsc.xml` configures `android:networkSecurityConfig` — allows cleartext HTTP for local Spoolman and printer targets. Uses plain `HttpURLConnection` for Spoolman REST. `Utils.java` contains JSch SSH helpers (`sendSShCommand`, `getJsonDB`, `setJsonDB`) but these are **dead code** — they are not called from `MainActivity.java`. The printer interaction is HTTP-only (downloading the filament DB as a zip).
+
+## ESP32 Firmware (`Arduino/ESP32/`)
+
+### Hardware
+
+Drop-in for the K2-RFID ESP32 board: RC522 RFID reader (SPI), speaker on GPIO 27.
+
+| Signal | GPIO |
+|---|---|
+| RC522 SS | 5 |
+| RC522 RST | 21 |
+| Speaker | 27 |
+
+### File Structure
+
+```
+Arduino/ESP32/Spool_ID/
+  Spool_ID.ino              Main sketch: NFC loop, web server, config, OTA
+  src/
+    includes.h
+    AES/AES.h + AES.cpp     AES-128-ECB; keytype 0 = UID key derivation, keytype 1 = data cipher
+    Spoolman/               REST client: fetchSpools, createSpool, patchRfidTag, ensureRfidFields
+    WWW/html.h              Full web UI as PROGMEM string
+```
+
+### Key Globals (Spool_ID.ino)
+
+- `spoolData` — 48-char tag data string queued for next write
+- `pendingSpoolId` — Spoolman spool.id to PATCH after write (0 = none)
+- `pendingWrite` — true when a write is queued (either Spoolman or manual)
+- `tagWriteCount` — tracks how many tags written for current spool (max 2, for two-tag spools)
+- `encrypted` / `ekey` — encryption state and UID-derived key for current tag
+
+### Web API Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/` | Serve web UI |
+| GET | `/api/status` | Polled every 1s by browser; returns tag state + event |
+| GET | `/api/spools` | Proxy `GET /api/v1/spool` from Spoolman |
+| POST | `/api/queuespool` | Queue existing Spoolman spool for writing |
+| POST | `/api/createspool` | Create new Spoolman spool then queue |
+| POST | `/spooldata` | Manual write (legacy, no Spoolman) |
+| GET/POST | `/config` | Read / save config.ini |
+| POST | `/update.html` | OTA firmware upload |
+| POST | `/updatedb.html` | Upload gzip material DB |
+
+### Config Keys (`/config.ini`)
+
+`AP_SSID`, `AP_PASS`, `WIFI_SSID`, `WIFI_PASS`, `WIFI_HOST`, `PRINTER_HOST`, `SM_ENABLE`, `SM_HOST`, `SM_PORT`
+
+### Required Arduino Libraries
+
+- **MFRC522** by GithubCommunity (Library Manager)
+- **ArduinoJson** by Benoit Blanchon (Library Manager)
+
+### Crypto (same keys as Android app)
+
+- `keytype 0` (UID key derivation master): `71 33 62 75 5E 74 31 6E 71 66 5A 28 70 66 24 31`
+- `keytype 1` (data cipher master): `48 40 43 46 6B 52 6E 7A 40 4B 41 74 42 4A 70 32`
+- Both use AES-128-ECB, no IV, no padding
+
+---
+
+## Android Build Notes
+
+- ViewBinding is enabled (`buildFeatures { viewBinding true }`) — use generated binding classes rather than `findViewById`
+- Release builds use ProGuard minification + resource shrinking (`app/proguard-rules.pro`)
+- `compileSdk`/`targetSdk` 36, `minSdk` 21, Java 11
 
 ## Dependencies (from `gradle/libs.versions.toml`)
 

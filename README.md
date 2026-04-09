@@ -100,6 +100,27 @@ Tap **Read** with an NFC tag near the back of your phone (or enable auto-read in
 
 ---
 
+---
+
+## ESP32 Hardware Option
+
+Don't have an Android phone with MIFARE Classic support? There's an ESP32-based alternative.
+
+The `Arduino/ESP32/` folder contains firmware for the [K2-RFID ESP32 hardware](https://github.com/DnG-Crafts/K2-RFID/tree/main/Arduino/ESP32) — a drop-in replacement that serves a web interface mirroring the app's functionality.
+
+**Same hardware, same wiring** (RC522 RFID reader, SS=GPIO5, RST=GPIO21, speaker=GPIO27). Flash the firmware, connect to the `K2_RFID` WiFi AP, open `http://10.1.0.1`.
+
+Features:
+- Read and write Creality RFID tags
+- Spoolman integration — pick an existing spool or create a new one, write the tag, auto-PATCH the spool with the tag UID
+- Two-tag write workflow
+- OTA firmware updates
+- Runs fully local, no phone needed
+
+See [`Arduino/ESP32/README.md`](Arduino/ESP32/README.md) for build and setup instructions.
+
+---
+
 ## Credits
 
 CFtag is a fork of [K2-RFID](https://github.com/DnG-Crafts/K2-RFID) by DnG-Crafts. The core tag format, encryption, and filament database handling are their work.
