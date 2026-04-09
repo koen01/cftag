@@ -487,7 +487,17 @@ void handleFetchDb()
     return;
   }
 
-  // Stream-parse, keeping only the fields the web UI needs
+  // Read full body — getString() handles chunked transfer encoding correctly;
+  // getStreamPtr() returns raw TCP bytes which break ArduinoJson on chunked responses.
+  String body = http.getString();
+  http.end();
+
+  if (body.isEmpty()) {
+    webServer.send(500, "application/json", "{\"error\":\"Empty response from Creality\"}");
+    return;
+  }
+
+  // Parse, keeping only the fields the web UI needs
   JsonDocument filter;
   filter["result"]["list"][0]["id"]       = true;
   filter["result"]["list"][0]["name"]     = true;
@@ -495,9 +505,9 @@ void handleFetchDb()
   filter["result"]["list"][0]["vendorId"] = true;
 
   JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, *http.getStreamPtr(),
+  DeserializationError err = deserializeJson(doc, body,
                                              DeserializationOption::Filter(filter));
-  http.end();
+  body = String(); // free the raw response string before building output
 
   if (err) {
     webServer.send(500, "application/json",
