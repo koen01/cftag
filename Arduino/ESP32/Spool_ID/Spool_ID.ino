@@ -468,18 +468,20 @@ void handleFetchDb()
   http.begin(client, "https://api.crealitycloud.com/api/cxy/v2/slice/profile/official/materialList");
   http.setTimeout(30000);
   http.addHeader("Content-Type",    "application/json");
+  http.addHeader("User-Agent",      "CFtag/1.0 (ESP32)");
   http.addHeader("__CXY_BRAND_",    "creality");
   http.addHeader("__CXY_UID_",      "");
   http.addHeader("__CXY_OS_LANG_",  "0");
   http.addHeader("__CXY_DUID_",     duid);
   http.addHeader("__CXY_APP_VER_",  "1.0");
   http.addHeader("__CXY_APP_CH_",   "CP_Beta");
+  http.addHeader("__CXY_OS_VER_",   "CFtag/1.0 (ESP32)");
   http.addHeader("__CXY_TIMEZONE_", "28800");
   http.addHeader("__CXY_APP_ID_",   "creality_model");
   http.addHeader("__CXY_REQUESTID_",duid);
   http.addHeader("__CXY_PLATFORM_", "11");
 
-  int code = http.POST("{\"engineVersion\":\"3.0.0\",\"pageSize\":500}");
+  int code = http.POST("{\"engineVersion\":\"3.0.0\",\"pageSize\":500,\"pageNum\":1}");
   if (code != 200) {
     http.end();
     webServer.send(500, "application/json",
