@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
 
+extern String smLastError;
+
 // Returns JSON array string of active spools, or "" on error.
 String smFetchSpools(const String& host, int port);
 

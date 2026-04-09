@@ -2,6 +2,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
+String smLastError = "";  // last non-2xx code + body for diagnostics
+
 static String smRequest(const String& host, int port, const String& path,
                         const String& method, const String& body = "")
 {
@@ -21,8 +23,12 @@ static String smRequest(const String& host, int port, const String& path,
   }
 
   String result = "";
-  if (code >= 200 && code < 300)
+  if (code >= 200 && code < 300) {
     result = http.getString();
+  } else {
+    smLastError = String(code) + " " + http.getString();
+    smLastError = smLastError.substring(0, 200);
+  }
 
   http.end();
   return result;

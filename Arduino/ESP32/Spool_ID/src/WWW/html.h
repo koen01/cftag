@@ -482,7 +482,7 @@ function createAndQueueSpool() {
     document.getElementById('btn-create').disabled = false;
     document.getElementById('create-spinner').style.display = 'none';
     if (r.ok) { r.json().then(d=>showStatus('create-status','✓ Spool #'+d.spoolId+' created! Tap tag to write.','ok')); }
-    else      { showStatus('create-status','Spoolman error — check settings','err'); }
+    else      { r.json().catch(()=>({})).then(d=>showStatus('create-status','Spoolman error: '+(d.detail||d.error||r.status),'err')); }
   });
 }
 

@@ -361,7 +361,11 @@ void handleCreateSpool()
   int    weightG  = webServer.arg("weightG").toInt();
 
   int id = smCreateSpool(SM_HOST, SM_PORT, vendor, material, colorName, "#" + colorHex, weightG);
-  if (id < 0) { webServer.send(500, "text/plain", "Spoolman error"); return; }
+  if (id < 0) {
+    webServer.send(500, "application/json",
+      "{\"error\":\"Spoolman error\",\"detail\":\"" + smLastError + "\"}");
+    return;
+  }
 
   pendingSpoolId = id;
   pendingWrite   = true;
