@@ -49,7 +49,7 @@ The `serialNum` field (6 hex digits, zero-padded decimal) stores the Spoolman `s
 
 **Flow:**
 1. User fills in filament details → clicks "Add (Spoolman)" → `openSpoolAdd()` creates a spool via REST API → captures `spool.id` → saves to `SharedPreferences` key `sm_spool_id`
-2. User taps NFC tag → `WriteTag()` writes the queued ID into `serialNum` → `UpdateSpoolmanExtraAfterTagWrite()` PATCHes the spool's `extra` field with `creality.serial_num` and `creality.tag_uid_*` (two-way breadcrumb)
+2. User taps NFC tag → `WriteTag()` writes the queued ID into `serialNum` → `writeRfidTagIdToSpoolman()` PATCHes the spool's `extra` field with `rfid_tag_id_1`/`rfid_tag_id_2` (RFID tag UID breadcrumb)
 3. The queued `sm_spool_id` is sticky (survives multiple tag writes for two-tag-per-spool workflow) but cleared on filament/printer-type change
 
 Spoolman REST calls go through `performSmRequest()` in `MainActivity.java`; settings (`smhost`, `smport`, `enablesm`) are stored in `SharedPreferences`.
@@ -58,7 +58,7 @@ Spoolman REST calls go through `performSmRequest()` in `MainActivity.java`; sett
 
 | File | Purpose |
 |------|---------|
-| `MainActivity.java` | Everything: NFC dispatch, UI dialogs, tag read/write, Spoolman REST calls, SSH to printer |
+| `MainActivity.java` | Everything: NFC dispatch, UI dialogs, tag read/write, Spoolman REST calls, filament DB download from printer |
 | `Utils.java` | Static helpers: AES key derivation (`createKey`), `cipherData`, SSH via JSch (`sendSShCommand`, `getJsonDB`, `setJsonDB`), Spoolman HTTP (`fetchDataFromApi`), material DB helpers |
 | `filamentDB.java` | Room database singleton; one DB per printer type (`material_database_<pType>`) |
 | `MatDB.java` | Room DAO for the `filament_table` |
@@ -82,7 +82,7 @@ Spoolman REST calls go through `performSmRequest()` in `MainActivity.java`; sett
 
 ### Settings (SharedPreferences keys)
 
-`printer`, `enabledm` (dark mode), `enablesm` (Spoolman), `smhost`, `smport`, `sm_spool_id` (queued spool ID), `autoread`, `newformat`, plus manual-entry field defaults (`mon`, `day`, `yr`, `ven`, `bat`, `mat`, `col`, `len`, `ser`, `res`).
+`printer`, `enabledm` (dark mode), `enablesm` (Spoolman), `smhost`, `smport`, `sm_spool_id` (queued spool ID), `autoread`, `autoLaunch`, `newformat`, plus manual-entry field defaults (`mon`, `day`, `yr`, `ven`, `bat`, `mat`, `col`, `len`, `ser`, `res`).
 
 ### Network Security
 
