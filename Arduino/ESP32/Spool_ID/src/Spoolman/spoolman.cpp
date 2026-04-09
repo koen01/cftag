@@ -64,37 +64,40 @@ static int smFindOrCreateVendor(const String& host, int port, const String& name
 }
 
 // Returns filament id or -1
+// Matches Android: GET all filaments, search by vendor id + name (case-insensitive)
 static int smFindOrCreateFilament(const String& host, int port, int vendorId,
                                    const String& material, const String& colorName,
-                                   const String& colorHex, int weightG, float diameter)
+                                   const String& colorHex, int weightG)
 {
-  // Try to find existing
-  String path = "/api/v1/filament?vendor_id=" + String(vendorId) +
-                "&material=" + material;
-  String resp = smRequest(host, port, path, "GET");
+  String filamentName = material + " " + colorName;
+
+  // Search existing filaments — no query params, same as Android app
+  String resp = smRequest(host, port, "/api/v1/filament", "GET");
   if (resp.length() > 0) {
     JsonDocument doc;
     if (deserializeJson(doc, resp) == DeserializationError::Ok) {
       for (JsonObject f : doc.as<JsonArray>()) {
-        // match on color hex too
-        String hex = f["color_hex"].as<String>();
-        hex.toLowerCase();
-        String chx = colorHex;
-        chx.replace("#",""); chx.toLowerCase();
-        if (hex == chx)
+        // Match by vendor id + filament name, case-insensitive (same as Android)
+        int fVendorId = -1;
+        if (!f["vendor"].isNull())
+          fVendorId = f["vendor"]["id"].as<int>();
+        String fName = f["name"].as<String>();
+        fName.toLowerCase();
+        String matchName = filamentName;
+        matchName.toLowerCase();
+        if (fVendorId == vendorId && fName == matchName)
           return f["id"].as<int>();
       }
     }
   }
 
   // Create new filament
-  String chx = colorHex; chx.replace("#","");
+  String chx = colorHex; chx.replace("#", "");
   String body = "{\"vendor_id\":" + String(vendorId) +
-                ",\"name\":\"" + material + " " + colorName + "\"" +
+                ",\"name\":\"" + filamentName + "\"" +
                 ",\"material\":\"" + material + "\"" +
                 ",\"color_hex\":\"" + chx + "\"" +
-                ",\"weight\":" + String(weightG) +
-                ",\"diameter\":" + String(diameter, 2) + "}";
+                ",\"weight\":" + String(weightG) + "}";
   resp = smRequest(host, port, "/api/v1/filament", "POST", body);
   if (resp.length() > 0) {
     JsonDocument doc;
@@ -110,11 +113,11 @@ int smCreateSpool(const String& host, int port,
                   int weightG)
 {
   int vendorId = smFindOrCreateVendor(host, port, vendorName);
-  if (vendorId < 0) return -1;
+  if (vendorId < 0) { smLastError = "vendor step: " + smLastError; return -1; }
 
   int filamentId = smFindOrCreateFilament(host, port, vendorId, material,
-                                           colorName, colorHex, weightG, 1.75f);
-  if (filamentId < 0) return -1;
+                                           colorName, colorHex, weightG);
+  if (filamentId < 0) { smLastError = "filament step: " + smLastError; return -1; }
 
   String body = "{\"filament_id\":" + String(filamentId) +
                 ",\"initial_weight\":" + String(weightG) + "}";
@@ -123,6 +126,9 @@ int smCreateSpool(const String& host, int port,
     JsonDocument doc;
     if (deserializeJson(doc, resp) == DeserializationError::Ok)
       return doc["id"].as<int>();
+    smLastError = "spool step: parse failed, resp=" + resp.substring(0, 100);
+  } else {
+    smLastError = "spool step: " + smLastError;
   }
   return -1;
 }
