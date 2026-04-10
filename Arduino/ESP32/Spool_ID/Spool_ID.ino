@@ -450,15 +450,15 @@ void handleDb()
   }
 }
 
-// GET /api/fetchdb — download material list from Creality cloud and store locally
-void handleFetchDb()
+// Download material list from Creality cloud and store as /matdb.json.
+// Returns number of materials written, or -1 on error (sets smLastError).
+int fetchMaterialDb()
 {
   if (WiFi.status() != WL_CONNECTED) {
-    webServer.send(503, "application/json", "{\"error\":\"WiFi not connected\"}");
-    return;
+    smLastError = "WiFi not connected";
+    return -1;
   }
 
-  // Build stable UUIDs from MAC (duid) and MAC+1 (reqid)
   uint8_t mac[6]; WiFi.macAddress(mac);
   char duid[37], reqid[37];
   snprintf(duid, sizeof(duid),
@@ -496,21 +496,15 @@ void handleFetchDb()
   int code = http.POST("{\"engineVersion\":\"3.0.0\",\"pageSize\":500}");
   if (code != 200) {
     http.end();
-    webServer.send(500, "application/json",
-      "{\"error\":\"Creality API returned " + String(code) + "\"}");
-    return;
+    smLastError = "Creality API returned " + String(code);
+    return -1;
   }
 
-  // Read full body — getString() handles chunked transfer encoding correctly
   String body = http.getString();
   http.end();
 
-  if (body.isEmpty()) {
-    webServer.send(500, "application/json", "{\"error\":\"Empty response from Creality\"}");
-    return;
-  }
+  if (body.isEmpty()) { smLastError = "Empty response"; return -1; }
 
-  // Parse, keeping only the fields the web UI needs
   JsonDocument filter;
   filter["result"]["list"][0]["id"]       = true;
   filter["result"]["list"][0]["name"]     = true;
@@ -520,35 +514,22 @@ void handleFetchDb()
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, body,
                                              DeserializationOption::Filter(filter));
-  body = String(); // free the raw response string before building output
+  body = String();
 
-  if (err) {
-    webServer.send(500, "application/json",
-      String("{\"error\":\"Parse: ") + err.c_str() + "\"}");
-    return;
-  }
+  if (err) { smLastError = String("Parse: ") + err.c_str(); return -1; }
 
   JsonArray list = doc["result"]["list"].as<JsonArray>();
   if (list.isNull() || list.size() == 0) {
-    webServer.send(500, "application/json", "{\"error\":\"No materials in response\"}");
-    return;
+    smLastError = "No materials in response"; return -1;
   }
 
-  // Escape helper for JSON string values
   auto esc = [](const char* s) -> String {
-    String out(s);
-    out.replace("\\", "\\\\");
-    out.replace("\"", "\\\"");
-    return out;
+    String out(s); out.replace("\\", "\\\\"); out.replace("\"", "\\\""); return out;
   };
 
-  // Write directly to LittleFS to avoid building a large String in RAM
   if (LittleFS.exists("/matdb.json")) LittleFS.remove("/matdb.json");
   File f = LittleFS.open("/matdb.json", "w");
-  if (!f) {
-    webServer.send(500, "application/json", "{\"error\":\"Cannot write to filesystem\"}");
-    return;
-  }
+  if (!f) { smLastError = "Cannot write to filesystem"; return -1; }
 
   f.print("{\"result\":{\"list\":[");
   int count = 0;
@@ -568,7 +549,18 @@ void handleFetchDb()
   }
   f.print("]}}");
   f.close();
+  return count;
+}
 
+// GET /api/fetchdb
+void handleFetchDb()
+{
+  int count = fetchMaterialDb();
+  if (count < 0) {
+    webServer.send(500, "application/json",
+      "{\"error\":\"" + smLastError + "\"}");
+    return;
+  }
   webServer.send(200, "application/json",
     "{\"ok\":true,\"count\":" + String(count) + "}");
 }
@@ -623,6 +615,12 @@ void setup()
     WiFi.setHostname(WIFI_HOSTNAME.c_str());
     WiFi.begin(WIFI_SSID.c_str(), WIFI_PASS.c_str());
     WiFi.waitForConnectResult();
+
+    // First boot after WiFi setup: auto-download material DB if none exists
+    if (WiFi.status() == WL_CONNECTED &&
+        !LittleFS.exists("/matdb.gz") && !LittleFS.exists("/matdb.json")) {
+      fetchMaterialDb();
+    }
   }
 
   if (!WIFI_HOSTNAME.isEmpty()) {

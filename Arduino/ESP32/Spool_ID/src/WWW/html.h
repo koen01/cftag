@@ -187,7 +187,7 @@ static const char indexData[] PROGMEM = R"rawhtml(
     <div class="card-title">Device Updates</div>
     <button class="secondary" onclick="document.getElementById('fw-dialog').showModal()">Upload Firmware (.bin)</button>
     <button class="secondary" onclick="document.getElementById('db-dialog').showModal()">Upload Material DB (.gz)</button>
-    <button class="secondary" id="btn-fetchdb" onclick="fetchDb()">Fetch Material DB from Creality Cloud</button>
+    <button class="secondary" id="btn-fetchdb" onclick="fetchDb()">Refresh DB from Cloud</button>
     <div id="fetchdb-msg" class="sm-status" style="display:none;margin-top:8px;"></div>
   </div>
 
