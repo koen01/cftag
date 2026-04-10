@@ -85,12 +85,12 @@ static const char indexData[] PROGMEM = R"rawhtml(
     <div class="card">
       <div class="card-title">Spoolman Integration</div>
       <div class="tabs">
-        <div class="tab active" onclick="switchTab('link')">Link Existing Spool</div>
-        <div class="tab" onclick="switchTab('create')">Create New Spool</div>
+        <div class="tab active" onclick="switchTab('create')">Create New Spool</div>
+        <div class="tab" onclick="switchTab('link')">Link Existing Spool</div>
       </div>
 
       <!-- Tab: link existing -->
-      <div class="tab-panel active" id="tab-link">
+      <div class="tab-panel" id="tab-link">
         <label>Select Spool</label>
         <select id="spool-select"><option value="">Loading spools…</option></select>
         <div id="spool-detail" class="tag-data" style="margin-top:6px;"></div>
@@ -119,7 +119,7 @@ static const char indexData[] PROGMEM = R"rawhtml(
       </div>
 
       <!-- Tab: create new -->
-      <div class="tab-panel" id="tab-create">
+      <div class="tab-panel active" id="tab-create">
         <div id="db-create" style="display:none">
           <label>Brand (from DB)</label>
           <select id="create-db-brand" onchange="filterDbFilaments('create-db-brand','create-db-filament')"><option value="">— brand —</option></select>
@@ -333,9 +333,9 @@ loadMaterialDb();
 
 // ── Tab switching ───────────────────────────────────────────────────────────
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&name==='link')||(i===1&&name==='create')));
-  document.getElementById('tab-link').classList.toggle('active', name==='link');
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&name==='create')||(i===1&&name==='link')));
   document.getElementById('tab-create').classList.toggle('active', name==='create');
+  document.getElementById('tab-link').classList.toggle('active', name==='link');
 }
 
 // ── Status polling ──────────────────────────────────────────────────────────
