@@ -42,11 +42,11 @@ IPAddress Server_IP(10, 1, 0, 1);
 IPAddress Subnet_Mask(255, 255, 255, 0);
 
 // ── Config (loaded from /config.ini) ────────────────────────────────────────
-String AP_SSID        = "K2_RFID";
+String AP_SSID        = "cftag";
 String AP_PASS        = "password";
 String WIFI_SSID      = "";
 String WIFI_PASS      = "";
-String WIFI_HOSTNAME  = "k2.local";
+String WIFI_HOSTNAME  = "cftag.local";
 String PRINTER_HOST   = "";
 bool   SM_ENABLE      = false;
 String SM_HOST        = "";
