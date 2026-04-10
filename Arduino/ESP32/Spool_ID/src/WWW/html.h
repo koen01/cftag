@@ -426,6 +426,7 @@ function loadSpools() {
   fetch('/api/spools').then(r=>r.json()).then(data=>{
     spools = data;
     const sel = document.getElementById('spool-select');
+    const prev = sel.value;  // preserve current selection across refreshes
     sel.innerHTML = '<option value="">— Select a spool —</option>';
     data.forEach(s=>{
       const name = s.filament?.name || ('Spool #'+s.id);
@@ -435,6 +436,7 @@ function loadSpools() {
       opt.textContent = `#${s.id} ${name}${color}`;
       sel.appendChild(opt);
     });
+    if (prev) sel.value = prev;  // restore if still present in the list
   }).catch(()=>{});
 }
 document.getElementById('spool-select').addEventListener('change', function() {
