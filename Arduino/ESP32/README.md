@@ -32,7 +32,7 @@ Install via **Sketch → Include Library → Manage Libraries**:
 
 ## Web Interface
 
-After flashing, connect to WiFi AP **K2_RFID** / password **password**, then open **http://10.1.0.1**
+After flashing, connect to WiFi AP **cftag** / password **password**, then open **http://10.1.0.1**
 
 - **⚙ Settings**: Configure AP credentials, join your LAN WiFi, enable Spoolman
 - **Link Existing Spool**: Pick from your Spoolman spool list → queue → tap tag
