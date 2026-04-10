@@ -97,7 +97,9 @@ static int smFindOrCreateFilament(const String& host, int port, int vendorId,
                 ",\"name\":\"" + filamentName + "\"" +
                 ",\"material\":\"" + material + "\"" +
                 ",\"color_hex\":\"" + chx + "\"" +
-                ",\"weight\":" + String(weightG) + "}";
+                ",\"weight\":" + String(weightG) +
+                ",\"density\":1.24" +
+                ",\"diameter\":1.75}";
   resp = smRequest(host, port, "/api/v1/filament", "POST", body);
   if (resp.length() > 0) {
     JsonDocument doc;
