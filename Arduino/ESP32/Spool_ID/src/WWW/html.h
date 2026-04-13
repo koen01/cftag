@@ -364,11 +364,25 @@ function poll() {
     if (d.event && d.event !== lastEventSeen) {
       lastEventSeen = d.event;
       evBadge.style.display = '';
-      if (d.event === 'write_ok') { evBadge.textContent = '✓ Write OK'; evBadge.className = 'badge badge-green'; }
-      else if (d.event === 'write_error') { evBadge.textContent = '✗ Write Error'; evBadge.className = 'badge badge-red'; }
-      else if (d.event === 'read') { evBadge.textContent = '◎ Read'; evBadge.className = 'badge badge-plain'; }
-      else if (d.event === 'wrong_tag') { evBadge.textContent = '✗ Auth Failed'; evBadge.className = 'badge badge-red'; }
-      else { evBadge.style.display = 'none'; }
+      if (d.event === 'write_ok') {
+        evBadge.textContent = '✓ Write OK';
+        evBadge.className = 'badge badge-green';
+        console.log('[CFtag] Write OK — UID:', d.uid, '| encrypted:', d.encrypted);
+      } else if (d.event === 'write_error') {
+        const detail = d.writeError || 'unknown';
+        evBadge.textContent = '✗ Write Error';
+        evBadge.title = detail;
+        evBadge.className = 'badge badge-red';
+        console.error('[CFtag] Write error — ' + detail);
+        console.debug('[CFtag] Tag state at failure:', {uid: d.uid, encrypted: d.encrypted, spoolData: d.spoolData});
+      } else if (d.event === 'read') {
+        evBadge.textContent = '◎ Read';
+        evBadge.className = 'badge badge-plain';
+      } else if (d.event === 'wrong_tag') {
+        evBadge.textContent = '✗ Auth Failed';
+        evBadge.className = 'badge badge-red';
+        console.warn('[CFtag] Auth failed — both default and UID-derived keys rejected. UID:', d.uid);
+      } else { evBadge.style.display = 'none'; }
     }
 
     // Pending write bar

@@ -61,10 +61,11 @@ bool   pendingWrite   = false; // true when manual write is queued (no Spoolman)
 int    tagWriteCount  = 0;    // how many tags written for current spool (max 2)
 
 // ── Tag state ────────────────────────────────────────────────────────────────
-bool   encrypted    = false;
-String lastUID      = "";
-String lastTagData  = "";    // 96-char raw read (sector1+sector2)
-String lastEvent    = "";    // "read", "write_ok", "write_error", "wrong_tag"
+bool   encrypted      = false;
+String lastUID        = "";
+String lastTagData    = "";    // 96-char raw read (sector1+sector2)
+String lastEvent      = "";    // "read", "write_ok", "write_error", "wrong_tag"
+String lastWriteError = "";    // human-readable detail for write_error events
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 String bytesToHex(byte *buf, byte len)
@@ -159,6 +160,8 @@ String readTag()
 // On first write, also rekeys the sector 1 trailer.
 bool writeTag()
 {
+  lastWriteError = "";
+
   // Pad spoolData to 96 chars
   String full = spoolData;
   while (full.length() < 96) full += ' ';
@@ -170,7 +173,10 @@ bool writeTag()
   // Authenticate sector 1
   status = (MFRC522::StatusCode)mfrc522.PCD_Authenticate(
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &authKey, &mfrc522.uid);
-  if (status != MFRC522::STATUS_OK) return false;
+  if (status != MFRC522::STATUS_OK) {
+    lastWriteError = String("S1 auth failed (") + String(mfrc522.GetStatusCodeName(status)) + "), encrypted=" + (encrypted ? "true" : "false");
+    return false;
+  }
 
   // Write sector 1 (blocks 4-6), encrypted
   for (int blockIdx = 0; blockIdx < 3; blockIdx++) {
@@ -178,19 +184,30 @@ bool writeTag()
     full.substring(blockIdx * 16, blockIdx * 16 + 16).getBytes(plain, 17);
     aes.encrypt(1, plain, cipher);
     status = (MFRC522::StatusCode)mfrc522.MIFARE_Write(4 + blockIdx, cipher, 16);
-    if (status != MFRC522::STATUS_OK) return false;
+    if (status != MFRC522::STATUS_OK) {
+      lastWriteError = String("S1 block ") + (4 + blockIdx) + " write failed (" + String(mfrc522.GetStatusCodeName(status)) + ")";
+      return false;
+    }
   }
 
   // On first write: update sector 1 trailer (block 7) with derived key
   if (!encrypted) {
     byte buf[18];
     byte sz = sizeof(buf);
-    if (mfrc522.MIFARE_Read(7, buf, &sz) == MFRC522::STATUS_OK) {
+    MFRC522::StatusCode trailerStatus = mfrc522.MIFARE_Read(7, buf, &sz);
+    if (trailerStatus == MFRC522::STATUS_OK) {
       for (int i = 0; i < 6; i++) {
         buf[i]      = ekey.keyByte[i];   // key A
         buf[10 + i] = ekey.keyByte[i];   // key B
       }
-      mfrc522.MIFARE_Write(7, buf, 16);
+      trailerStatus = mfrc522.MIFARE_Write(7, buf, 16);
+      if (trailerStatus != MFRC522::STATUS_OK) {
+        lastWriteError = String("S1 trailer rekey failed (") + String(mfrc522.GetStatusCodeName(trailerStatus)) + ")";
+        return false;
+      }
+    } else {
+      lastWriteError = String("S1 trailer read failed (") + String(mfrc522.GetStatusCodeName(trailerStatus)) + ")";
+      return false;
     }
     encrypted = true;
   }
@@ -198,14 +215,20 @@ bool writeTag()
   // Authenticate sector 2 with default key
   status = (MFRC522::StatusCode)mfrc522.PCD_Authenticate(
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 11, &key, &mfrc522.uid);
-  if (status != MFRC522::STATUS_OK) return false;
+  if (status != MFRC522::STATUS_OK) {
+    lastWriteError = String("S2 auth failed (") + String(mfrc522.GetStatusCodeName(status)) + ")";
+    return false;
+  }
 
   // Write sector 2 (blocks 8-10), plaintext
   for (int blockIdx = 0; blockIdx < 3; blockIdx++) {
     byte plain[16];
     full.substring(48 + blockIdx * 16, 48 + blockIdx * 16 + 16).getBytes(plain, 17);
     status = (MFRC522::StatusCode)mfrc522.MIFARE_Write(8 + blockIdx, plain, 16);
-    if (status != MFRC522::STATUS_OK) return false;
+    if (status != MFRC522::STATUS_OK) {
+      lastWriteError = String("S2 block ") + (8 + blockIdx) + " write failed (" + String(mfrc522.GetStatusCodeName(status)) + ")";
+      return false;
+    }
   }
 
   return true;
@@ -308,9 +331,11 @@ void handleStatus()
   json += "\"pendingSpoolId\":" + String(pendingSpoolId) + ",";
   json += "\"pendingWrite\":" + String(pendingWrite ? "true" : "false") + ",";
   json += "\"tagWriteCount\":" + String(tagWriteCount) + ",";
-  json += "\"smEnable\":" + String(SM_ENABLE ? "true" : "false");
+  json += "\"smEnable\":" + String(SM_ENABLE ? "true" : "false") + ",";
+  json += "\"writeError\":\"" + lastWriteError + "\"";
   json += "}";
-  lastEvent = "";  // clear after browser consumed it
+  lastEvent = "";       // clear after browser consumed it
+  lastWriteError = "";
   webServer.send(200, "application/json", json);
 }
 
