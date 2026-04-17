@@ -1,15 +1,28 @@
 /*
  * CFtag ESP32 Firmware
- * Drop-in replacement for K2-RFID ESP32 hardware (RC522, SS=5, RST=21, SPK=27)
+ * Drop-in replacement for K2-RFID ESP32 hardware.
  * Adds Spoolman integration and tag reading on top of the original write functionality.
  *
- * Required libraries (install via Arduino Library Manager):
- *   - ArduinoJson by Benoit Blanchon
- * (MFRC522 is bundled in src/MFRC522/ — do not install separately)
+ * ── Hardware selection ───────────────────────────────────────────────────────
+ * Uncomment ONE of the defines below, or leave both commented for RC522 (default).
  *
- * Hardware: ESP32 + RC522 RFID (SPI: SCK=18, MISO=19, MOSI=23, SS=5, RST=21)
- *           Speaker/buzzer on GPIO 27
+ *   RC522 (default) — original K2-RFID / CFtag hardware
+ *     ESP32 + RC522 via SPI (SCK=18, MISO=19, MOSI=23, SS=5, RST=21)
+ *     Speaker on GPIO 27
+ *
+ *   PN532 — soylentOrange K2-RFID hardware (ESP32-S2/S3)
+ *     ESP32-S2/S3 + PN532 via SPI (SCK=12, MISO=9, MOSI=11, SS=7)
+ *     Speaker on GPIO 16
+ *     Requires: install "Adafruit PN532" via Arduino Library Manager
+ *     Note: uses HSPI bus; change to FSPI if your S3 board needs it
+ *
+ * ── Required libraries (Arduino Library Manager) ────────────────────────────
+ *   - ArduinoJson by Benoit Blanchon        (both builds)
+ *   - Adafruit PN532 by Adafruit            (PN532 build only)
+ * (MFRC522 is bundled in src/MFRC522/ — do not install separately)
  */
+
+// #define USE_PN532   // ← uncomment for PN532 hardware (soylentOrange K2-RFID)
 
 #include <FS.h>
 #include <SPI.h>
@@ -23,15 +36,36 @@
 #include <ArduinoJson.h>
 #include "src/includes.h"
 
+#ifdef USE_PN532
+#include <Adafruit_PN532.h>
+#endif
+
 // ── Pin definitions ──────────────────────────────────────────────────────────
+#ifdef USE_PN532
+#define PN532_SCK_PIN  12
+#define PN532_MOSI_PIN 11
+#define PN532_SS_PIN    7
+#define PN532_MISO_PIN  9
+#define SPK_PIN        16
+#else
 #define SS_PIN  5
 #define RST_PIN 21
 #define SPK_PIN 27
+#endif
 
 // ── Globals ──────────────────────────────────────────────────────────────────
+#ifdef USE_PN532
+SPIClass        pn532SPI(HSPI);
+Adafruit_PN532  nfc(PN532_SS_PIN, &pn532SPI);
+uint8_t         nfcUID[7];
+uint8_t         nfcUIDLen  = 0;
+uint8_t         ekey[6];
+uint8_t         defKey[6]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+#else
 MFRC522           mfrc522(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;   // default key (0xFF×6)
 MFRC522::MIFARE_Key ekey;  // UID-derived key
+#endif
 WebServer         webServer(80);
 AES               aes;
 File              upFile;
@@ -82,9 +116,17 @@ String bytesToHex(byte *buf, byte len)
 // Derive ekey from current tag UID (same algorithm as Android createKey)
 void createKey()
 {
-  byte uid[16];
-  byte bufOut[16];
+  byte uid[16], bufOut[16];
   int x = 0;
+#ifdef USE_PN532
+  for (int i = 0; i < 16; i++) {
+    if (x >= (int)nfcUIDLen) x = 0;
+    uid[i] = nfcUID[x++];
+  }
+  aes.encrypt(0, uid, bufOut);
+  for (int i = 0; i < 6; i++)
+    ekey[i] = bufOut[i];
+#else
   for (int i = 0; i < 16; i++) {
     if (x >= (int)mfrc522.uid.size) x = 0;
     uid[i] = mfrc522.uid.uidByte[x++];
@@ -92,6 +134,7 @@ void createKey()
   aes.encrypt(0, uid, bufOut);
   for (int i = 0; i < 6; i++)
     ekey.keyByte[i] = bufOut[i];
+#endif
 }
 
 // Encrypt or decrypt 48 bytes (3 AES blocks) using keytype 1 (data cipher)
@@ -117,40 +160,67 @@ void cipherSector(byte *data, byte *out, bool encrypt)
 
 // ── Tag read ─────────────────────────────────────────────────────────────────
 // Reads both sectors. Sector 1 (blocks 4-6) is AES-ECB encrypted;
-// since AES-ECB decrypt = AES-ECB encrypt of ciphertext (not true in general),
-// we store the plaintext in sector 2 (blocks 8-10) in plaintext for read-back,
-// and also attempt to reconstruct from the stored spoolData on a write match.
+// sector 2 (blocks 8-10) is plaintext.
 // Returns 96-char hex string (48-char sector1 raw + 48-char sector2 raw), or "".
 String readTag()
 {
+  byte buf[18];
+  String s1 = "", s2 = "";
+
+#ifdef USE_PN532
+  // Auth sector 1 (block 7 is trailer)
+  if (!nfc.mifareclassic_AuthenticateBlock(nfcUID, nfcUIDLen, 7, 0,
+                                           encrypted ? ekey : defKey))
+    return "";
+  for (int block = 4; block <= 6; block++) {
+    if (nfc.mifareclassic_ReadDataBlock(block, buf))
+      s1 += bytesToHex(buf, 16);
+  }
+  // Auth sector 2 (block 11 is trailer) with default key
+  if (nfc.mifareclassic_AuthenticateBlock(nfcUID, nfcUIDLen, 11, 0, defKey)) {
+    for (int block = 8; block <= 10; block++) {
+      if (nfc.mifareclassic_ReadDataBlock(block, buf))
+        s2 += bytesToHex(buf, 16);
+    }
+  }
+#else
   MFRC522::StatusCode status;
   MFRC522::MIFARE_Key &authKey = encrypted ? ekey : key;
+  byte sz = sizeof(buf);
 
-  // Authenticate sector 1 (block 7 is trailer)
+  // Auth sector 1 (block 7 is trailer)
   status = (MFRC522::StatusCode)mfrc522.PCD_Authenticate(
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &authKey, &mfrc522.uid);
-  if (status != MFRC522::STATUS_OK) return "";
-
-  byte buf[18];
-  byte sz = sizeof(buf);
-  String s1 = "", s2 = "";
+  if (status != MFRC522::STATUS_OK) {
+    Serial.printf("[read] S1 auth failed (%s)\n", mfrc522.GetStatusCodeName(status));
+    return "";
+  }
 
   for (int block = 4; block <= 6; block++) {
     sz = sizeof(buf);
-    if (mfrc522.MIFARE_Read(block, buf, &sz) == MFRC522::STATUS_OK)
+    MFRC522::StatusCode rs = mfrc522.MIFARE_Read(block, buf, &sz);
+    if (rs == MFRC522::STATUS_OK)
       s1 += bytesToHex(buf, 16);
+    else
+      Serial.printf("[read] S1 block %d read failed (%s)\n", block, mfrc522.GetStatusCodeName(rs));
   }
 
-  // Authenticate sector 2 (block 11 is trailer) with default key
+  // Auth sector 2 (block 11 is trailer) with default key
   status = (MFRC522::StatusCode)mfrc522.PCD_Authenticate(
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 11, &key, &mfrc522.uid);
   if (status == MFRC522::STATUS_OK) {
     for (int block = 8; block <= 10; block++) {
       sz = sizeof(buf);
-      if (mfrc522.MIFARE_Read(block, buf, &sz) == MFRC522::STATUS_OK)
+      MFRC522::StatusCode rs = mfrc522.MIFARE_Read(block, buf, &sz);
+      if (rs == MFRC522::STATUS_OK)
         s2 += bytesToHex(buf, 16);
+      else
+        Serial.printf("[read] S2 block %d read failed (%s)\n", block, mfrc522.GetStatusCodeName(rs));
     }
+  } else {
+    Serial.printf("[read] S2 auth failed (%s)\n", mfrc522.GetStatusCodeName(status));
   }
+#endif
 
   return s1 + s2;  // 96-char hex (raw bytes, sector1 still encrypted)
 }
@@ -167,6 +237,60 @@ bool writeTag()
   while (full.length() < 96) full += ' ';
   full = full.substring(0, 96);
 
+#ifdef USE_PN532
+
+  // Auth sector 1
+  if (!nfc.mifareclassic_AuthenticateBlock(nfcUID, nfcUIDLen, 7, 0,
+                                           encrypted ? ekey : defKey)) {
+    lastWriteError = String("S1 auth failed, encrypted=") + (encrypted ? "true" : "false");
+    return false;
+  }
+
+  // Write sector 1 (blocks 4-6), encrypted
+  for (int blockIdx = 0; blockIdx < 3; blockIdx++) {
+    byte plain[16], cipher[16];
+    full.substring(blockIdx * 16, blockIdx * 16 + 16).getBytes(plain, 17);
+    aes.encrypt(1, plain, cipher);
+    if (!nfc.mifareclassic_WriteDataBlock(4 + blockIdx, cipher)) {
+      lastWriteError = String("S1 block ") + (4 + blockIdx) + " write failed";
+      return false;
+    }
+  }
+
+  // On first write: rekey sector 1 trailer (block 7) with derived key
+  if (!encrypted) {
+    byte trailer[16];
+    if (!nfc.mifareclassic_ReadDataBlock(7, trailer)) {
+      lastWriteError = "S1 trailer read failed";
+      return false;
+    }
+    memcpy(trailer,      ekey, 6);  // key A
+    memcpy(trailer + 10, ekey, 6);  // key B
+    if (!nfc.mifareclassic_WriteDataBlock(7, trailer)) {
+      lastWriteError = "S1 trailer rekey failed";
+      return false;
+    }
+    encrypted = true;
+  }
+
+  // Auth sector 2 with default key
+  if (!nfc.mifareclassic_AuthenticateBlock(nfcUID, nfcUIDLen, 11, 0, defKey)) {
+    lastWriteError = "S2 auth failed";
+    return false;
+  }
+
+  // Write sector 2 (blocks 8-10), plaintext
+  for (int blockIdx = 0; blockIdx < 3; blockIdx++) {
+    byte plain[16];
+    full.substring(48 + blockIdx * 16, 48 + blockIdx * 16 + 16).getBytes(plain, 17);
+    if (!nfc.mifareclassic_WriteDataBlock(8 + blockIdx, plain)) {
+      lastWriteError = String("S2 block ") + (8 + blockIdx) + " write failed";
+      return false;
+    }
+  }
+
+#else
+
   MFRC522::StatusCode status;
   MFRC522::MIFARE_Key &authKey = encrypted ? ekey : key;
 
@@ -175,8 +299,10 @@ bool writeTag()
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &authKey, &mfrc522.uid);
   if (status != MFRC522::STATUS_OK) {
     lastWriteError = String("S1 auth failed (") + String(mfrc522.GetStatusCodeName(status)) + "), encrypted=" + (encrypted ? "true" : "false");
+    Serial.printf("[write] %s\n", lastWriteError.c_str());
     return false;
   }
+  Serial.println("[write] S1 auth OK");
 
   // Write sector 1 (blocks 4-6), encrypted
   for (int blockIdx = 0; blockIdx < 3; blockIdx++) {
@@ -186,12 +312,15 @@ bool writeTag()
     status = (MFRC522::StatusCode)mfrc522.MIFARE_Write(4 + blockIdx, cipher, 16);
     if (status != MFRC522::STATUS_OK) {
       lastWriteError = String("S1 block ") + (4 + blockIdx) + " write failed (" + String(mfrc522.GetStatusCodeName(status)) + ")";
+      Serial.printf("[write] %s\n", lastWriteError.c_str());
       return false;
     }
+    Serial.printf("[write] S1 block %d OK\n", 4 + blockIdx);
   }
 
   // On first write: update sector 1 trailer (block 7) with derived key
   if (!encrypted) {
+    Serial.println("[write] rekeying S1 trailer");
     byte buf[18];
     byte sz = sizeof(buf);
     MFRC522::StatusCode trailerStatus = mfrc522.MIFARE_Read(7, buf, &sz);
@@ -203,10 +332,13 @@ bool writeTag()
       trailerStatus = mfrc522.MIFARE_Write(7, buf, 16);
       if (trailerStatus != MFRC522::STATUS_OK) {
         lastWriteError = String("S1 trailer rekey failed (") + String(mfrc522.GetStatusCodeName(trailerStatus)) + ")";
+        Serial.printf("[write] %s\n", lastWriteError.c_str());
         return false;
       }
+      Serial.println("[write] S1 trailer rekeyed OK");
     } else {
       lastWriteError = String("S1 trailer read failed (") + String(mfrc522.GetStatusCodeName(trailerStatus)) + ")";
+      Serial.printf("[write] %s\n", lastWriteError.c_str());
       return false;
     }
     encrypted = true;
@@ -217,8 +349,10 @@ bool writeTag()
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 11, &key, &mfrc522.uid);
   if (status != MFRC522::STATUS_OK) {
     lastWriteError = String("S2 auth failed (") + String(mfrc522.GetStatusCodeName(status)) + ")";
+    Serial.printf("[write] %s\n", lastWriteError.c_str());
     return false;
   }
+  Serial.println("[write] S2 auth OK");
 
   // Write sector 2 (blocks 8-10), plaintext
   for (int blockIdx = 0; blockIdx < 3; blockIdx++) {
@@ -227,9 +361,13 @@ bool writeTag()
     status = (MFRC522::StatusCode)mfrc522.MIFARE_Write(8 + blockIdx, plain, 16);
     if (status != MFRC522::STATUS_OK) {
       lastWriteError = String("S2 block ") + (8 + blockIdx) + " write failed (" + String(mfrc522.GetStatusCodeName(status)) + ")";
+      Serial.printf("[write] %s\n", lastWriteError.c_str());
       return false;
     }
+    Serial.printf("[write] S2 block %d OK\n", 8 + blockIdx);
   }
+
+#endif
 
   return true;
 }
@@ -622,12 +760,27 @@ void handleFwUpdate()
 // ── setup ─────────────────────────────────────────────────────────────────────
 void setup()
 {
+  Serial.begin(115200);
+  Serial.println("\n[CFtag] booting");
   LittleFS.begin(true);
   loadConfig();
+  Serial.printf("[CFtag] config: AP=%s SM=%s host=%s port=%d\n",
+    AP_SSID.c_str(), SM_ENABLE ? "on" : "off", SM_HOST.c_str(), SM_PORT);
 
+#ifdef USE_PN532
+  pn532SPI.begin(PN532_SCK_PIN, PN532_MISO_PIN, PN532_MOSI_PIN, PN532_SS_PIN);
+  nfc.begin();
+  if (!nfc.getFirmwareVersion()) {
+    // PN532 not found — flash error tone and halt
+    while (true) { tone(SPK_PIN, 400, 200); delay(600); }
+  }
+  nfc.SAMConfig();
+#else
   SPI.begin();
   mfrc522.PCD_Init();
   for (byte i = 0; i < 6; i++) key.keyByte[i] = 0xFF;
+  Serial.println("[RFID] RC522 initialized");
+#endif
 
   pinMode(SPK_PIN, OUTPUT);
 
@@ -640,6 +793,7 @@ void setup()
     WiFi.setHostname(WIFI_HOSTNAME.c_str());
     WiFi.begin(WIFI_SSID.c_str(), WIFI_PASS.c_str());
     WiFi.waitForConnectResult();
+    Serial.printf("[WiFi] status=%d IP=%s\n", WiFi.status(), WiFi.localIP().toString().c_str());
 
     // First boot after WiFi setup: auto-download material DB if none exists
     if (WiFi.status() == WL_CONNECTED &&
@@ -682,6 +836,31 @@ void loop()
 {
   webServer.handleClient();
 
+#ifdef USE_PN532
+
+  // Poll for a tag (100 ms timeout keeps the web server responsive)
+  if (!nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, nfcUID, &nfcUIDLen, 100)) return;
+
+  createKey();
+  lastUID = bytesToHex(nfcUID, nfcUIDLen);
+
+  // Determine encryption state: try default key, then UID-derived key
+  encrypted = false;
+  if (!nfc.mifareclassic_AuthenticateBlock(nfcUID, nfcUIDLen, 7, 0, defKey)) {
+    // Re-select tag after failed auth (readPassiveTargetID halts current target first)
+    if (!nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, nfcUID, &nfcUIDLen, 500)) {
+      delay(2000); return;
+    }
+    if (!nfc.mifareclassic_AuthenticateBlock(nfcUID, nfcUIDLen, 7, 0, ekey)) {
+      tone(SPK_PIN, 400, 150); delay(300); tone(SPK_PIN, 400, 150);
+      lastEvent = "wrong_tag";
+      delay(2000); return;
+    }
+    encrypted = true;
+  }
+
+#else
+
   if (!mfrc522.PICC_IsNewCardPresent()) return;
   if (!mfrc522.PICC_ReadCardSerial())   return;
 
@@ -690,42 +869,54 @@ void loop()
   if (t != MFRC522::PICC_TYPE_MIFARE_MINI &&
       t != MFRC522::PICC_TYPE_MIFARE_1K   &&
       t != MFRC522::PICC_TYPE_MIFARE_4K) {
+    Serial.printf("[RFID] unsupported tag type: %s\n", mfrc522.PICC_GetTypeName(t));
     tone(SPK_PIN, 400, 400);
     delay(2000);
     return;
   }
 
-  // Derive UID-based key
   createKey();
   lastUID = bytesToHex(mfrc522.uid.uidByte, mfrc522.uid.size);
+  Serial.printf("[RFID] tag detected UID=%s type=%s\n",
+    lastUID.c_str(), mfrc522.PICC_GetTypeName(t));
 
-  // Determine encryption state: try derived key first, fall back to default
+  // Determine encryption state: try default key, then UID-derived key
   encrypted = false;
   MFRC522::StatusCode status;
   status = (MFRC522::StatusCode)mfrc522.PCD_Authenticate(
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &key, &mfrc522.uid);
   if (status != MFRC522::STATUS_OK) {
+    Serial.printf("[RFID] default key auth failed (%s), trying UID key\n",
+      mfrc522.GetStatusCodeName(status));
     // Re-select card after failed auth
     mfrc522.PICC_HaltA(); mfrc522.PCD_StopCrypto1();
     if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
+      Serial.println("[RFID] tag lost after re-select");
       delay(2000); return;
     }
     status = (MFRC522::StatusCode)mfrc522.PCD_Authenticate(
       MFRC522::PICC_CMD_MF_AUTH_KEY_A, 7, &ekey, &mfrc522.uid);
     if (status != MFRC522::STATUS_OK) {
-      // Auth failed with both keys — wrong/unreadable tag
+      Serial.printf("[RFID] UID key auth also failed (%s) — wrong tag\n",
+        mfrc522.GetStatusCodeName(status));
       tone(SPK_PIN, 400, 150); delay(300); tone(SPK_PIN, 400, 150);
       lastEvent = "wrong_tag";
       delay(2000); return;
     }
     encrypted = true;
   }
+  Serial.printf("[RFID] auth OK, encrypted=%s\n", encrypted ? "true" : "false");
   mfrc522.PCD_StopCrypto1();
+
+#endif
 
   // Write if a spool has been queued via the web UI, or a manual write is pending
   if (pendingSpoolId > 0 || pendingWrite) {
+    Serial.printf("[RFID] writing tag — spoolId=%d pendingWrite=%s data=%s\n",
+      pendingSpoolId, pendingWrite ? "true" : "false", spoolData.c_str());
     bool ok = writeTag();
     if (ok) {
+      Serial.println("[RFID] write OK");
       lastEvent = "write_ok";
       lastTagData = spoolData;
       tone(SPK_PIN, 1000, 200);
@@ -733,23 +924,34 @@ void loop()
       // PATCH Spoolman with tag UID (Spoolman-queued writes only)
       if (SM_ENABLE && !SM_HOST.isEmpty() && pendingSpoolId > 0) {
         tagWriteCount++;
+        Serial.printf("[SM] patching spool %d tagWriteCount=%d uid=%s\n",
+          pendingSpoolId, tagWriteCount, lastUID.c_str());
         smPatchRfidTag(SM_HOST, SM_PORT, pendingSpoolId, lastUID, tagWriteCount);
         if (tagWriteCount >= 2) {
           pendingSpoolId = 0; tagWriteCount = 0;  // done with both tags
         }
       }
     } else {
+      Serial.printf("[RFID] write FAILED: %s\n", lastWriteError.c_str());
       lastEvent = "write_error";
       tone(SPK_PIN, 400, 150); delay(300); tone(SPK_PIN, 400, 150);
     }
   } else {
     // Read-only: store raw tag data (sector 1 ciphertext + sector 2 plaintext)
+    Serial.println("[RFID] reading tag");
     lastTagData = readTag();
     lastEvent   = "read";
+    if (lastTagData.isEmpty()) {
+      Serial.println("[RFID] read FAILED — empty result");
+    } else {
+      Serial.printf("[RFID] read OK data=%s\n", lastTagData.c_str());
+    }
     tone(SPK_PIN, 800, 100);
   }
 
+#ifndef USE_PN532
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
+#endif
   delay(2000);
 }
