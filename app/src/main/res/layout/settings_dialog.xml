@@ -2,294 +2,393 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/m3_surface"
     android:fillViewport="true"
-    android:fitsSystemWindows="true"
-    android:maxWidth="500dp"
-    android:background="@color/background_main"
-    android:layout_height="wrap_content">
-    <androidx.constraintlayout.widget.ConstraintLayout
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:background="@color/background_main"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
 
-
+        <!-- Header -->
         <LinearLayout
-            android:id="@+id/settingsframe"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:maxWidth="500dp"
-            android:padding="24dp"
-            android:background="@color/background_main"
-            app:layout_constraintWidth_max="500dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="General Settings"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_marginTop="30dp"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginBottom="16dp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp">
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Auto Read"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_main" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Automatically read on tag discovery"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_alt" />
-                </LinearLayout>
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    app:thumbTint="@color/switch_tint_selector"
-                    android:id="@+id/readswitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp">
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Launch App"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_main" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Automatically open this app on tag discovery"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_alt" />
-                </LinearLayout>
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/launchswitch"
-                    app:thumbTint="@color/switch_tint_selector"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp">
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Dark Mode"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_main" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Enable a dark theme for this app"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_alt" />
-                </LinearLayout>
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/themeswitch"
-                    app:thumbTint="@color/switch_tint_selector"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#DDDDDD"
-                android:layout_marginVertical="16dp"/>
+                android:text="Settings"
+                android:textSize="28sp"
+                android:textColor="@color/m3_on_surface"
+                android:fontFamily="sans-serif" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Spoolman Configuration"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="16dp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp">
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Enable Spoolman"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_main" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Enable spoolman functionality"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_alt" />
-                </LinearLayout>
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/spoolswitch"
-                    app:thumbTint="@color/switch_tint_selector"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/layout_host"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:boxBackgroundColor="@color/background_alt"
-                app:boxStrokeColor="@color/input_border_color"
-                app:hintTextColor="@color/input_border_color"
-                app:boxStrokeWidth="1.5dp"
-                app:boxStrokeWidthFocused="2dp"
-                android:textColorHint="@color/primary_brand"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_main"
-                android:hint="Host Address"
-                app:expandedHintEnabled="false"
-                android:layout_marginTop="12dp">
-                <EditText
-                    android:id="@+id/smhost"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="192.168.1.100"
-                    android:textColorHint="@color/text_alt"
-                    android:textColor="@color/text_main"
-                    android:inputType="textUri" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/layout_port"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:boxBackgroundColor="@color/background_alt"
-                app:boxStrokeColor="@color/input_border_color"
-                app:hintTextColor="@color/input_border_color"
-                android:textColorHint="@color/primary_brand"
-                app:boxStrokeWidth="1.5dp"
-                app:boxStrokeWidthFocused="2dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_main"
-                android:hint="Port"
-                app:expandedHintEnabled="false"
-                android:layout_marginTop="12dp">
-                <EditText
-                    android:id="@+id/smport"
-                    android:maxLength="5"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_main"
-                    android:textColorHint="@color/text_alt"
-                    android:hint="7912"
-                    android:inputType="number" />
-            </com.google.android.material.textfield.TextInputLayout>
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#DDDDDD"
-                android:layout_marginVertical="16dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/credits"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="12dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/credits_text"
+                android:layout_marginTop="2dp"
+                android:text="App preferences, Spoolman, database"
                 android:textSize="14sp"
-                android:textColor="@color/text_alt"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:id="@+id/lnkOriginalApp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/credits_link"
-                android:textSize="14sp"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold"
-                android:paddingVertical="4dp"
-                android:layout_marginBottom="4dp"/>
+                android:textColor="@color/m3_on_surface_variant" />
 
         </LinearLayout>
 
+        <!-- General section label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:text="GENERAL"
+            android:textSize="12sp"
+            android:textColor="@color/m3_primary"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.12" />
+
+        <!-- General settings group -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/m3_surface_container_low"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Auto read row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Auto Read"
+                            android:textSize="16sp"
+                            android:textColor="@color/m3_on_surface" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Automatically read on tag discovery"
+                            android:textSize="14sp"
+                            android:textColor="@color/m3_on_surface_variant" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/readswitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/m3_outline_variant"
+                    android:alpha="0.5" />
+
+                <!-- Launch app row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Launch App"
+                            android:textSize="16sp"
+                            android:textColor="@color/m3_on_surface" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Automatically open this app on tag discovery"
+                            android:textSize="14sp"
+                            android:textColor="@color/m3_on_surface_variant" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/launchswitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/m3_outline_variant"
+                    android:alpha="0.5" />
+
+                <!-- Dark mode row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dark Mode"
+                            android:textSize="16sp"
+                            android:textColor="@color/m3_on_surface" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Enable a dark theme for this app"
+                            android:textSize="14sp"
+                            android:textColor="@color/m3_on_surface_variant" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/themeswitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Spoolman section label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:text="SPOOLMAN"
+            android:textSize="12sp"
+            android:textColor="@color/m3_primary"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.12" />
+
+        <!-- Spoolman group card (tertiary container) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/m3_tertiary_container"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Enable Spoolman toggle -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Enable Spoolman"
+                            android:textSize="16sp"
+                            android:textColor="@color/m3_on_tertiary_container" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sync tags to your Spoolman instance"
+                            android:textSize="14sp"
+                            android:textColor="@color/m3_on_tertiary_container"
+                            android:alpha="0.75" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/spoolswitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_host"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Host Address"
+                    app:placeholderText="192.168.1.100">
+
+                    <EditText
+                        android:id="@+id/smhost"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/m3_on_surface"
+                        android:inputType="textUri" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_port"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Port"
+                    app:placeholderText="7912">
+
+                    <EditText
+                        android:id="@+id/smport"
+                        android:maxLength="5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/m3_on_surface"
+                        android:inputType="number" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- About section label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:text="ABOUT"
+            android:textSize="12sp"
+            android:textColor="@color/m3_primary"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.12" />
+
+        <!-- About group -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/m3_surface_container_low"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:id="@+id/settingsframe"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/credits"
+                    android:textSize="16sp"
+                    android:textColor="@color/m3_on_surface"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/credits_text"
+                    android:textSize="14sp"
+                    android:textColor="@color/m3_on_surface_variant"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/lnkOriginalApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/credits_link"
+                    android:textSize="14sp"
+                    android:textColor="@color/m3_primary"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingVertical="4dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Close button -->
         <Button
-            android:textColor="@color/text_inverted"
             android:id="@+id/btncls"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:layout_marginTop="60dp"
-            android:layout_marginEnd="30dp"
-            android:layout_marginBottom="30dp"
-            android:padding="14dp"
-            android:text="@string/close"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="@+id/settingsframe"
-            app:layout_constraintTop_toBottomOf="@+id/settingsframe" />
+            android:layout_marginEnd="16dp"
+            android:text="@string/close" />
 
-        <View
-            android:layout_width="1dp"
-            android:layout_height="40dp"
-            android:background="#00F4F4F4"
-            app:layout_constraintEnd_toEndOf="@+id/settingsframe"
-            app:layout_constraintStart_toStartOf="@+id/settingsframe"
-            app:layout_constraintTop_toBottomOf="@+id/btncls" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 </ScrollView>

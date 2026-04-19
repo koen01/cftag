@@ -1,13 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary_brand">#1976D2</color>
-    <color name="primary_variant">#82B1FF</color>
-    <color name="primary_error">#FF0A0A</color>
-    <color name="text_main">#000000</color>
-    <color name="text_alt">#757575</color>
-    <color name="text_inverted">#FAFAFA</color>
-    <color name="text_hint">#D3D3D3</color>
-    <color name="switch_thumb">#FAFAFA</color>
-    <color name="background_main">#F4F4F4</color>
-    <color name="background_alt">#FFFFFF</color>
+    <!-- M3 Amber palette — light -->
+    <color name="m3_primary">#8a5000</color>
+    <color name="m3_on_primary">#ffffff</color>
+    <color name="m3_primary_container">#ffddb6</color>
+    <color name="m3_on_primary_container">#2c1600</color>
+    <color name="m3_secondary">#725a42</color>
+    <color name="m3_on_secondary">#ffffff</color>
+    <color name="m3_secondary_container">#ffddbe</color>
+    <color name="m3_on_secondary_container">#291806</color>
+    <color name="m3_tertiary">#55633e</color>
+    <color name="m3_on_tertiary">#ffffff</color>
+    <color name="m3_tertiary_container">#d9e8b9</color>
+    <color name="m3_on_tertiary_container">#141f02</color>
+    <color name="m3_error">#ba1a1a</color>
+    <color name="m3_on_error">#ffffff</color>
+    <color name="m3_error_container">#ffdad6</color>
+    <color name="m3_on_error_container">#410002</color>
+    <color name="m3_surface">#fff8f4</color>
+    <color name="m3_on_surface">#201a14</color>
+    <color name="m3_on_surface_variant">#51453a</color>
+    <color name="m3_surface_variant">#ece0d4</color>
+    <color name="m3_surface_container_low">#fef1e6</color>
+    <color name="m3_surface_container">#f8ebdf</color>
+    <color name="m3_surface_container_high">#f2e5d9</color>
+    <color name="m3_surface_container_highest">#ece0d4</color>
+    <color name="m3_outline">#847569</color>
+    <color name="m3_outline_variant">#d4c4b6</color>
+    <color name="m3_inverse_surface">#362f28</color>
+    <color name="m3_inverse_on_surface">#fcefe2</color>
+    <color name="m3_inverse_primary">#ffb95e</color>
+
+    <!-- Legacy names → M3 amber values (keep for Java/selector references) -->
+    <color name="primary_brand">@color/m3_primary</color>
+    <color name="primary_variant">@color/m3_primary_container</color>
+    <color name="primary_error">@color/m3_error</color>
+    <color name="text_main">@color/m3_on_surface</color>
+    <color name="text_alt">@color/m3_on_surface_variant</color>
+    <color name="text_inverted">@color/m3_on_primary</color>
+    <color name="text_hint">@color/m3_outline</color>
+    <color name="switch_thumb">@color/m3_on_primary</color>
+    <color name="background_main">@color/m3_surface</color>
+    <color name="background_alt">@color/m3_surface_container_low</color>
 </resources>

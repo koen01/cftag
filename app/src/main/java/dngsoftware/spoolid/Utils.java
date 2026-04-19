@@ -663,6 +663,17 @@ public class Utils {
         return 0;
     }
 
+    public static int getPositionByValue(ArrayAdapter<?> adapter, String value) {
+        if (adapter != null) {
+            for (int i = 0; i < adapter.getCount(); i++) {
+                if (Objects.requireNonNull(adapter.getItem(i)).toString().equalsIgnoreCase(value)) {
+                    return i;
+                }
+            }
+        }
+        return 0;
+    }
+
     public static String fetchDataFromApi(Context context, String apiUrl) throws Exception {
         URL url = new URL(apiUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();

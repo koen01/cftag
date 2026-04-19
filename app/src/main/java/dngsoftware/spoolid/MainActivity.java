@@ -18,6 +18,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -74,6 +75,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.flexbox.FlexboxLayout;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
@@ -102,6 +105,7 @@ import dngsoftware.spoolid.databinding.TagDialogBinding;
 import dngsoftware.spoolid.databinding.SpoolPickerDialogBinding;
 import dngsoftware.spoolid.databinding.UpdateDialogBinding;
 import dngsoftware.spoolid.databinding.WriteTagDialogBinding;
+import dngsoftware.spoolid.databinding.ChooseActionDialogBinding;
 
 public class MainActivity extends AppCompatActivity implements NfcAdapter.ReaderCallback, NavigationView.OnNavigationItemSelectedListener {
 
@@ -181,9 +185,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         tagWriteCount = 0;
         if (smEnabled) {
             executorService.execute(() -> matcher = new ColorMatcher(context));
-            updateSpoolStatus();
-            main.btnWriteAndCreate.setOnClickListener(v -> openSpoolAdd());
-            main.btnLinkExisting.setOnClickListener(v -> linkExistingSpoolAndWrite());
+            main.btnContinue.setOnClickListener(v -> openChooseAction());
             loadSpoolsIntoSpinner();
         }
 
@@ -203,23 +205,19 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             openManage(true);
         }
 
-        padapter = new ArrayAdapter<>(context, R.layout.spinner_item, printerDb);
+        padapter = new ArrayAdapter<>(context, R.layout.dropdown_item, printerDb);
         main.type.setAdapter(padapter);
-        main.type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                SaveSetting(context, "printer", Objects.requireNonNull(padapter.getItem(position)).toLowerCase());
-                SelectedPrinter = Objects.requireNonNull(padapter.getItem(position));
-                PrinterType = SelectedPrinter.toLowerCase();
-                setMatDb(PrinterType);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parentView) {
-            }
+        main.type.setOnItemClickListener((parent, view, position, id) -> {
+            SaveSetting(context, "printer", Objects.requireNonNull(padapter.getItem(position)).toLowerCase());
+            SelectedPrinter = Objects.requireNonNull(padapter.getItem(position));
+            PrinterType = SelectedPrinter.toLowerCase();
+            setMatDb(PrinterType);
         });
-
-        main.type.setSelection(getPositionByValue(main.type, PrinterType));
+        int typePos = getPositionByValue(padapter, PrinterType);
+        if (padapter.getCount() > 0) {
+            main.type.setText(padapter.getItem(typePos), false);
+            setMatDb(PrinterType);
+        }
 
         setColorViewColor(Color.argb(255, 0, 0, 255));
         MaterialColor = "0000FF";
@@ -227,8 +225,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         main.txtcolor.setText(MaterialColor);
         main.txtcolor.setTextColor(getContrastColor(Color.parseColor("#" + MaterialColor)));
 
-        main.colorview.setOnClickListener(view -> openPicker());
-        main.readbutton.setOnClickListener(view -> ReadSpoolData());
+        main.colorRow.setOnClickListener(v -> openPicker());
+        // read button removed — tag read happens in the write flow
 
         main.addbutton.setOnClickListener(view -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -279,33 +277,15 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
         main.menubutton.setOnClickListener(view -> drawerLayout.openDrawer(GravityCompat.START));
 
-        main.colorspin.setOnTouchListener((v, event) -> {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    openPicker();
-                    break;
-                case MotionEvent.ACTION_UP:
-                    v.performClick();
-                    break;
-                default:
-                    break;
-            }
-            return false;
-        });
-
-        sadapter = new ArrayAdapter<>(context, R.layout.spinner_item, materialWeights);
+        sadapter = new ArrayAdapter<>(context, R.layout.dropdown_item, materialWeights);
         main.spoolsize.setAdapter(sadapter);
-        main.spoolsize.setSelection(SelectedSize);
-        main.spoolsize.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                SelectedSize = main.spoolsize.getSelectedItemPosition();
-                MaterialWeight = sadapter.getItem(position);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parentView) {
-            }
+        if (sadapter.getCount() > SelectedSize) {
+            main.spoolsize.setText(sadapter.getItem(SelectedSize), false);
+            MaterialWeight = sadapter.getItem(SelectedSize);
+        }
+        main.spoolsize.setOnItemClickListener((parent, view, position, id) -> {
+            SelectedSize = position;
+            MaterialWeight = sadapter.getItem(position);
         });
 
     }
@@ -434,7 +414,6 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     main.tagid.setText(R.string.error);
                     return;
                 }
-                showToast(getString(R.string.tag_found) + bytesToHex(currentTag.getId()), Toast.LENGTH_SHORT);
                 main.tagid.setTextColor(ContextCompat.getColor(context,R.color.text_main));
                 main.tagid.setText(bytesToHex(currentTag.getId()));
                 encKey = createKey(currentTag.getId());
@@ -475,67 +454,57 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             }
             rdb = filamentDB.getInstance(context, pType);
             matDb = rdb.matDB();
-            mainHandler.post(() -> {
+            Runnable setup = () -> {
                 try {
                     main.writebutton.setOnClickListener(view -> WriteSpoolData(MaterialID, MaterialColor, GetMaterialLength(MaterialWeight)));
-                    badapter = new ArrayAdapter<>(context, R.layout.spinner_item, getMaterialBrands(matDb));
+                    String[] brands = getMaterialBrands(matDb);
+                    badapter = new ArrayAdapter<>(context, R.layout.dropdown_item, brands);
                     main.brand.setAdapter(badapter);
-                    if (SelectedBrand < main.brand.getCount()) {
-                        main.brand.setSelection(SelectedBrand);
+                    String initialBrand = (badapter.getCount() > 0) ? badapter.getItem(Math.min(SelectedBrand, badapter.getCount() - 1)) : null;
+                    if (initialBrand != null) {
+                        main.brand.setText(initialBrand, false);
+                        MaterialVendor = initialBrand;
                     }
-                    main.brand.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                            SelectedBrand = main.brand.getSelectedItemPosition();
-                            MaterialVendor = main.brand.getItemAtPosition(main.brand.getSelectedItemPosition()).toString();
-                            setMaterial(badapter.getItem(position));
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parentView) {
-                        }
+                    main.brand.setOnItemClickListener((parent, view, position, id) -> {
+                        SelectedBrand = position;
+                        MaterialVendor = Objects.requireNonNull(badapter.getItem(position)).toString();
+                        setMaterial(badapter.getItem(position));
                     });
-                    madapter = new ArrayAdapter<>(context, R.layout.spinner_item, getMaterials(matDb, badapter.getItem(main.brand.getSelectedItemPosition())));
-                    main.material.setAdapter(madapter);
-                    main.material.setSelection(getMaterialPos(madapter, MaterialID));
-                    main.material.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                            try {
-                                MaterialItem selectedItem = (MaterialItem) parentView.getItemAtPosition(position);
-                                MaterialName = selectedItem.getMaterialName();
-                                MaterialID = selectedItem.getMaterialID();
-                            } catch (Exception ignored) {}
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parentView) {
-                        }
+                    // Defer material population to next frame so brand adapter settles first
+                    String brandForMaterial = initialBrand;
+                    mainHandler.post(() -> {
+                        if (brandForMaterial != null) setMaterial(brandForMaterial);
                     });
                 } catch (Exception ignored) {
                 }
-            });
+            };
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                setup.run();
+            } else {
+                mainHandler.post(setup);
+            }
         } catch (Exception ignored) {
         }
     }
 
     void setMaterial(String brand) {
-        madapter = new ArrayAdapter<>(context, R.layout.spinner_item, getMaterials(matDb, brand));
+        madapter = new ArrayAdapter<>(context, R.layout.dropdown_item, getMaterials(matDb, brand));
         main.material.setAdapter(madapter);
-        main.material.setSelection(getMaterialPos(madapter, MaterialID));
-        main.material.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                try {
-                    MaterialItem selectedItem = (MaterialItem) parentView.getItemAtPosition(position);
-                    MaterialName = selectedItem.getMaterialName();
-                    MaterialID = selectedItem.getMaterialID();
-                } catch (Exception ignored) {}
+        int pos = getMaterialPos(madapter, MaterialID);
+        if (madapter.getCount() > 0) {
+            MaterialItem initial = madapter.getItem(pos);
+            if (initial != null) {
+                MaterialName = initial.getMaterialName();
+                MaterialID = initial.getMaterialID();
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parentView) {
-            }
+            main.material.setText(madapter.getItem(pos).toString(), false);
+        }
+        main.material.setOnItemClickListener((parent, view, position, id) -> {
+            try {
+                MaterialItem selectedItem = madapter.getItem(position);
+                MaterialName = selectedItem.getMaterialName();
+                MaterialID = selectedItem.getMaterialID();
+            } catch (Exception ignored) {}
         });
     }
 
@@ -630,12 +599,11 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                             mainHandler.post(() -> main.tagid.setText(String.format("\uD83D\uDD10 %s", bytesToHex(currentTag.getId()))));
                         }
                         playBeep();
-                        showToast(R.string.data_written_to_tag, Toast.LENGTH_SHORT);
+                        if (onSuccess == null) showToast(R.string.data_written_to_tag, Toast.LENGTH_SHORT);
                         String writtenUid = bytesToHex(currentTag.getId());
                         mainHandler.post(() -> {
                             if (GetSetting(context, "enablesm", false)) {
                                 tagWriteCount = Math.min(tagWriteCount + 1, 2);
-                                updateSpoolStatus();
                                 writeRfidTagIdToSpoolman(writtenUid, tagWriteCount);
                             }
                             if (onSuccess != null) onSuccess.run();
@@ -651,18 +619,6 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     }
                 }
             });
-        }
-    }
-
-    void updateSpoolStatus() {
-        String idRaw = GetSetting(context, "sm_spool_id", "").trim();
-        if (idRaw.isEmpty()) {
-            main.txtSpoolStatus.setVisibility(View.GONE);
-        } else {
-            int id = Integer.parseInt(idRaw);
-            String checks = tagWriteCount == 0 ? "" : tagWriteCount == 1 ? " \u2713" : " \u2713\u2713";
-            main.txtSpoolStatus.setText(getString(R.string.spool_status, id, tagWriteCount) + checks);
-            main.txtSpoolStatus.setVisibility(View.VISIBLE);
         }
     }
 
@@ -768,39 +724,96 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
     void ReadSpoolData() {
         executorService.execute(() -> {
             String tagData = ReadTag();
-            if (tagData != null && tagData.length() >= 40) {
-                mainHandler.post(() -> {
-                    String MaterialID = tagData.substring(12, 17);
-                    try {
-                        String pId = tagData.substring(48, 96).trim();
-                        if (!pId.isEmpty())
-                            main.type.setSelection(getPositionByValue(main.type, pId));
-                    } catch (Exception ignored) {
-                    }
-                    mainHandler.postDelayed(() -> {
-                        try {
-                            if (GetMaterialName(matDb, MaterialID) != null) {
-                                MaterialColor = tagData.substring(18, 24);
-                                String Length = tagData.substring(24, 28);
-                                setColorViewColor(Color.parseColor("#" + MaterialColor));
-                                main.txtcolor.setText(MaterialColor);
-                                main.txtcolor.setTextColor(getContrastColor(Color.parseColor("#" + MaterialColor)));
-                                MaterialName = Objects.requireNonNull(GetMaterialName(matDb, MaterialID))[0];
-                                main.brand.setSelection(badapter.getPosition(Objects.requireNonNull(GetMaterialName(matDb, MaterialID))[1]));
-                                mainHandler.postDelayed(() -> main.material.setSelection(getMaterialPos(madapter, MaterialID)), 300);
-                                main.spoolsize.setSelection(sadapter.getPosition(GetMaterialWeight(Length)));
-                                showToast(R.string.data_read_from_tag, Toast.LENGTH_SHORT);
-                            } else {
-                                showToast(R.string.unknown_or_empty_tag, Toast.LENGTH_SHORT);
-                            }
-                        } catch (Exception ignored) {
-                            showToast(R.string.error_reading_tag, Toast.LENGTH_SHORT);
-                        }
-                    }, 300);
-                });
-            } else {
-                showToast(R.string.error_reading_tag, Toast.LENGTH_SHORT);
+            if (tagData == null || tagData.length() < 40 || tagData.startsWith("\0")) {
+                if (tagData != null && tagData.startsWith("\0"))
+                    showToast(R.string.unknown_or_empty_tag, Toast.LENGTH_SHORT);
+                return;
             }
+
+            String materialIdDB  = tagData.substring(12, 17).toUpperCase();
+            String colorHex      = tagData.substring(18, 24).toUpperCase();
+            String weightStr     = GetMaterialWeight(tagData.substring(24, 28).toUpperCase());
+            String tagPrinter    = tagData.length() > 40 ? tagData.substring(40).trim().toLowerCase() : "";
+
+            // Fall back to current printer if tag value is empty or unrecognised
+            boolean printerKnown = !tagPrinter.isEmpty() &&
+                    printerDb.stream().anyMatch(p -> p.equalsIgnoreCase(tagPrinter));
+            String resolvedPrinter = printerKnown ? tagPrinter : PrinterType;
+
+            // DB lookup for brand + material name (open DB directly, no UI side effects)
+            String vendorName   = null;
+            String materialName = null;
+            try {
+                filamentDB fdb = filamentDB.getInstance(context, resolvedPrinter);
+                MatDB db = fdb.matDB();
+                Filament f = db.getFilamentById(materialIdDB);
+                if (f != null) {
+                    vendorName   = f.filamentVendor;
+                    materialName = f.filamentName;
+                }
+            } catch (Exception ignored) {}
+
+            final String fPrinter      = resolvedPrinter;
+            final boolean fSwitch      = !resolvedPrinter.equalsIgnoreCase(PrinterType);
+            final String fMaterialId   = materialIdDB;
+            final String fColor        = colorHex;
+            final String fWeight       = weightStr;
+            final String fVendor       = vendorName;
+
+            mainHandler.post(() -> {
+                // Color
+                MaterialColor = fColor;
+                main.txtcolor.setText(fColor);
+                try {
+                    int c = Color.parseColor("#" + fColor);
+                    setColorViewColor(c);
+                    main.txtcolor.setTextColor(getContrastColor(c));
+                } catch (Exception ignored) {}
+
+                // Weight / spool size
+                MaterialWeight = fWeight;
+                for (int i = 0; i < sadapter.getCount(); i++) {
+                    if (fWeight.equals(sadapter.getItem(i))) { SelectedSize = i; break; }
+                }
+                main.spoolsize.setText(fWeight, false);
+
+                // Pre-set MaterialID so setMaterial() will auto-select it
+                MaterialID = fMaterialId;
+
+                // Clear any queued spool — user will create a fresh one
+                SaveSetting(context, "sm_spool_id", "");
+
+                // Switch printer if tag says something different
+                if (fSwitch) {
+                    PrinterType = fPrinter;
+                    for (int i = 0; i < padapter.getCount(); i++) {
+                        String item = padapter.getItem(i);
+                        if (item != null && item.equalsIgnoreCase(fPrinter)) {
+                            SelectedPrinter = item;
+                            main.type.setText(item, false);
+                            break;
+                        }
+                    }
+                    SaveSetting(context, "printer", fPrinter);
+                }
+
+                // Load correct DB; this posts setMaterial(initialBrand) internally
+                setMatDb(fPrinter);
+
+                // Override brand + material after setMatDb's internal post settles
+                if (fVendor != null) {
+                    mainHandler.post(() -> {
+                        main.brand.setText(fVendor, false);
+                        MaterialVendor = fVendor;
+                        for (int i = 0; i < badapter.getCount(); i++) {
+                            if (fVendor.equals(badapter.getItem(i))) { SelectedBrand = i; break; }
+                        }
+                        setMaterial(fVendor);
+                    });
+                }
+
+                showToast(R.string.data_read_from_tag, Toast.LENGTH_SHORT);
+            });
         });
     }
 
@@ -2408,9 +2421,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         String dbName = "material_database_" + printerName.toLowerCase();
                         filamentDB.getInstance(context, dbName).close();
                         deleteDatabase(dbName);
+                        main.brand.setText("", false);
+                        main.material.setText("", false);
                         main.brand.setAdapter(null);
                         main.material.setAdapter(null);
-                        padapter.notifyDataSetChanged();
+                        padapter.clear();
+                        padapter.addAll(printerDb);
                         manageAdapter.notifyDataSetChanged();
                         showToast(getString(R.string.removed) + printerName, Toast.LENGTH_SHORT);
                     }
@@ -2427,7 +2443,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
             mdl.btnadd.setOnClickListener(v -> {
                 mdl.btnadd.setEnabled(false);
-                PrinterOption selected = (PrinterOption) mdl.type.getItemAtPosition(mdl.type.getSelectedItemPosition());
+                int selPos = mdl.type.getSelectedItemPosition();
+                PrinterOption selected = (PrinterOption) mdl.type.getItemAtPosition(selPos);
                 executorService.execute(() -> {
                     try {
                         String printerName = selected.data.getString("name");
@@ -2450,8 +2467,18 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                                 tdb.close();
                             }
                             printerDb.add(printerName);
+                            PrinterType = printerName.toLowerCase();
+                            SelectedPrinter = printerName;
+                            SaveSetting(context, "printer", PrinterType);
                             mainHandler.postDelayed(() -> {
-                                padapter.notifyDataSetChanged();
+                                padapter = new ArrayAdapter<>(context, R.layout.dropdown_item, new ArrayList<>(printerDb));
+                                main.type.setAdapter(padapter);
+                                main.type.setOnItemClickListener((ap, av, apos, aid) -> {
+                                    SaveSetting(context, "printer", Objects.requireNonNull(padapter.getItem(apos)).toLowerCase());
+                                    SelectedPrinter = Objects.requireNonNull(padapter.getItem(apos));
+                                    PrinterType = SelectedPrinter.toLowerCase();
+                                    setMatDb(PrinterType);
+                                });
                                 showToast(printerName + getString(R.string.added), Toast.LENGTH_SHORT);
                                 printerDialog.dismiss();
                             }, 100);
@@ -2467,12 +2494,23 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     }
                 });
             });
+            printerDialog.setOnDismissListener(d -> mainHandler.postDelayed(() -> {
+                if (PrinterType != null && !PrinterType.isEmpty()) {
+                    main.type.setText(SelectedPrinter, false);
+                    setMatDb(PrinterType);
+                }
+            }, 200));
             printerDialog.show();
         } catch (Exception ignored) {
         }
     }
 
     void openSpoolAdd() {
+        if (matDb == null) {
+            showToast("Select a printer and filament type first", Toast.LENGTH_SHORT);
+            return;
+        }
+        if (MaterialWeight == null) MaterialWeight = Utils.materialWeights[0];
         spoolDialog = new Dialog(context, R.style.Theme_SpoolID);
         spoolDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         spoolDialog.setCanceledOnTouchOutside(false);
@@ -2690,29 +2728,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                                         tagWriteCount = 0;
                                         final int finalSpoolId = spoolId;
                                         mainHandler.post(() -> {
-                                            updateSpoolStatus();
                                             spoolCreated[0] = true;
-                                            sdl.tabLayout.setAlpha(0.4f);
-                                            sdl.containerVendor.setVisibility(View.GONE);
-                                            sdl.containerFilament.setVisibility(View.GONE);
-                                            sdl.containerSpool.setVisibility(View.GONE);
-                                            sdl.txtSpoolCreated.setText(getString(R.string.spool_created_confirm, finalSpoolId));
-                                            sdl.txtSpoolCreated.setVisibility(View.VISIBLE);
-                                            sdl.btncls.setText(R.string.close);
-                                            String len = GetMaterialLength(MaterialWeight);
-                                            sdl.btnadd.setText(R.string.write_tag_1);
-                                            sdl.btnadd.setOnClickListener(vv -> {
-                                                sdl.btnadd.setEnabled(false);
-                                                WriteSpoolData(MaterialID, MaterialColor, len, () -> {
-                                                    sdl.txtSpoolCreated.setText(getString(R.string.tag_1_written_now_tag_2));
-                                                    sdl.btnadd.setText(R.string.write_tag_2);
-                                                    sdl.btnadd.setEnabled(true);
-                                                    sdl.btnadd.setOnClickListener(vvv -> {
-                                                        sdl.btnadd.setEnabled(false);
-                                                        WriteSpoolData(MaterialID, MaterialColor, len, () -> spoolDialog.dismiss());
-                                                    });
-                                                });
-                                            });
+                                            spoolDialog.dismiss();
+                                            showWriteTagSheet(finalSpoolId);
                                         });
                                     }
                                 } catch (Exception ignored) {
@@ -2735,6 +2753,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             }
         });
         spoolDialog.show();
+    }
+
+    private String spoolLabel(SpoolItem s) {
+        String label = "#" + s.id;
+        if (s.filamentName != null && !s.filamentName.isEmpty()) label += " · " + s.filamentName;
+        return label;
     }
 
     void loadSpoolsIntoSpinner() {
@@ -2778,6 +2802,81 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         });
     }
 
+    void openChooseAction() {
+        Dialog dialog = new Dialog(context, R.style.Theme_SpoolID);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        ChooseActionDialogBinding cdl = ChooseActionDialogBinding.inflate(getLayoutInflater());
+        dialog.setContentView(cdl.getRoot());
+
+        SpoolSpinnerAdapter adapter = new SpoolSpinnerAdapter(context, spoolList);
+        cdl.chooseActionSpinner.setAdapter(adapter);
+
+        if (!spoolList.isEmpty()) {
+            cdl.txtChosenSpool.setText(spoolLabel(spoolList.get(0)));
+            cdl.btnLinkSpool.setText(R.string.write_tag);
+        }
+        cdl.chooseActionSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                if (position >= 0 && position < spoolList.size()) {
+                    cdl.txtChosenSpool.setText(spoolLabel(spoolList.get(position)));
+                    cdl.btnLinkSpool.setText(R.string.write_tag);
+                }
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+
+        cdl.btnCreateSpool.setOnClickListener(v -> {
+            dialog.dismiss();
+            openSpoolAdd();
+        });
+        cdl.btnLinkSpool.setOnClickListener(v -> {
+            int pos = cdl.chooseActionSpinner.getSelectedItemPosition();
+            if (pos < 0 || pos >= spoolList.size()) {
+                showToast(R.string.no_spools_found, Toast.LENGTH_SHORT);
+                return;
+            }
+            dialog.dismiss();
+            linkExistingSpoolAndWrite(spoolList.get(pos));
+        });
+        cdl.btnCancelChoose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        Window w = dialog.getWindow();
+        if (w != null) w.setLayout((int) (dm.widthPixels * 0.92), WindowManager.LayoutParams.WRAP_CONTENT);
+    }
+
+    void showWriteTagSheet(int spoolId) {
+        BottomSheetDialog sheet = new BottomSheetDialog(context);
+        WriteTagDialogBinding wdl = WriteTagDialogBinding.inflate(getLayoutInflater());
+        sheet.setContentView(wdl.getRoot());
+        sheet.getBehavior().setSkipCollapsed(true);
+        sheet.getBehavior().setState(BottomSheetBehavior.STATE_EXPANDED);
+
+        wdl.txtInstruction.setText(getString(R.string.spool_linked_write_tag_1, spoolId));
+        wdl.btnCancel.setOnClickListener(v -> sheet.dismiss());
+
+        String len = GetMaterialLength(MaterialWeight);
+        wdl.btnWriteTag.setOnClickListener(v -> {
+            wdl.btnWriteTag.setEnabled(false);
+            WriteSpoolData(MaterialID, MaterialColor, len, () -> {
+                advanceWriteStepper(wdl);
+                wdl.txtInstruction.setText(getString(R.string.tag_1_written_now_tag_2));
+                wdl.btnWriteTag.setText(R.string.write_tag_2);
+                wdl.btnWriteTag.setEnabled(true);
+                wdl.btnWriteTag.setOnClickListener(vv -> {
+                    wdl.btnWriteTag.setEnabled(false);
+                    WriteSpoolData(MaterialID, MaterialColor, len, () -> sheet.dismiss());
+                });
+            });
+        });
+
+        sheet.show();
+    }
+
     void linkExistingSpoolAndWrite() {
         if (spoolList.isEmpty()) {
             showToast(R.string.no_spools_found, Toast.LENGTH_SHORT);
@@ -2791,7 +2890,6 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         SpoolItem selected = spoolList.get(pos);
         SaveSetting(context, "sm_spool_id", String.valueOf(selected.id));
         tagWriteCount = 0;
-        updateSpoolStatus();
 
         Dialog writeDialog = new Dialog(context, R.style.Theme_SpoolID);
         writeDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -2805,6 +2903,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         wdl.btnWriteTag.setOnClickListener(v -> {
             wdl.btnWriteTag.setEnabled(false);
             WriteSpoolData(MaterialID, MaterialColor, len, () -> {
+                advanceWriteStepper(wdl);
                 wdl.txtInstruction.setText(getString(R.string.tag_1_written_now_tag_2));
                 wdl.btnWriteTag.setText(R.string.write_tag_2);
                 wdl.btnWriteTag.setEnabled(true);
@@ -2820,6 +2919,23 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         getWindowManager().getDefaultDisplay().getMetrics(dm);
         Window w = writeDialog.getWindow();
         if (w != null) w.setLayout((int) (dm.widthPixels * 0.85), WindowManager.LayoutParams.WRAP_CONTENT);
+    }
+
+    void linkExistingSpoolAndWrite(SpoolItem selected) {
+        SaveSetting(context, "sm_spool_id", String.valueOf(selected.id));
+        tagWriteCount = 0;
+        showWriteTagSheet(selected.id);
+    }
+
+    void advanceWriteStepper(WriteTagDialogBinding wdl) {
+        int primary = ContextCompat.getColor(context, R.color.m3_primary);
+        int onPrimary = ContextCompat.getColor(context, R.color.m3_on_primary);
+        ColorStateList primaryList = ColorStateList.valueOf(primary);
+        wdl.stepText1.setText("✓");
+        wdl.stepConnector.setBackgroundTintList(primaryList);
+        wdl.stepDot2.setBackgroundTintList(primaryList);
+        wdl.stepText2.setTextColor(onPrimary);
+        wdl.stepLabel2.setTextColor(ContextCompat.getColor(context, R.color.m3_on_surface));
     }
 
     void openSpoolChooser() {
@@ -2917,7 +3033,6 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     SpoolPickerAdapter adapter = new SpoolPickerAdapter(context, finalItems, spool -> {
                         SaveSetting(context, "sm_spool_id", String.valueOf(spool.id));
                         tagWriteCount = 0;
-                        mainHandler.post(this::updateSpoolStatus);
                         spoolPickerDialog.dismiss();
                     });
                     pkl.rvSpools.setLayoutManager(new LinearLayoutManager(context));
@@ -3007,10 +3122,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 {
                     executorService.execute(() -> matcher = new ColorMatcher(context));
                 }
-                main.btnWriteAndCreate.setOnClickListener(v -> openSpoolAdd());
-                main.btnLinkExisting.setOnClickListener(v -> linkExistingSpoolAndWrite());
+                main.btnContinue.setOnClickListener(v -> openChooseAction());
                 loadSpoolsIntoSpinner();
-                mainHandler.post(() -> updateSpoolStatus());
                 String smHostNow = Objects.requireNonNull(sdl.smhost.getText()).toString().trim();
                 int smPortNow;
                 try { smPortNow = Integer.parseInt(Objects.requireNonNull(sdl.smport.getText()).toString().trim()); }
@@ -3038,8 +3151,15 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
         );
         sdl.btncls.setOnClickListener(v -> settingsDialog.dismiss());
         settingsDialog.setOnDismissListener(dialogInterface -> {
+            if (isFinishing() || isDestroyed()) return;
             SaveSetting(context, "smhost", Objects.requireNonNull(sdl.smhost.getText()).toString());
-            SaveSetting(context, "smport", Integer.parseInt(Objects.requireNonNull(sdl.smport.getText()).toString()));
+            int smPort;
+            try { smPort = Integer.parseInt(Objects.requireNonNull(sdl.smport.getText()).toString().trim()); }
+            catch (Exception e) { smPort = 7912; }
+            SaveSetting(context, "smport", smPort);
+            if (GetSetting(context, "enablesm", false)) {
+                loadSpoolsIntoSpinner();
+            }
         });
         settingsDialog.show();
     }

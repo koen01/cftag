@@ -213,6 +213,17 @@
     <string name="card_link_existing_title">LINK TO EXISTING SPOOLMAN SPOOL</string>
     <string name="spoolman_spinner_label">Spoolman</string>
     <string name="btn_link_existing">Link to Existing Spool</string>
+    <string name="btn_continue_spoolman">Assign to spool</string>
+    <string name="btn_continue_spoolman_subtitle">New or existing</string>
+    <string name="choose_action_title">Assign to a spool</string>
+    <string name="choose_action_subtitle">Is this filament a new spool, or one that\'s already tracked?</string>
+    <string name="choose_action_path_a_label">PATH A · NEW SPOOL</string>
+    <string name="choose_action_path_a_headline">Create new spool</string>
+    <string name="choose_action_path_a_body">Adds a new entry in Spoolman with this filament\'s details, then writes both RFID tags.</string>
+    <string name="choose_action_path_b_label">PATH B · EXISTING</string>
+    <string name="choose_action_path_b_headline">Link existing spool</string>
+    <string name="choose_action_path_b_body">Pick a spool that\'s already in Spoolman and write its ID onto these tags.</string>
+    <string name="btn_browse_spools">Pick from list</string>
     <string name="no_spools_found">No spools found</string>
     <string name="failed_to_load_spools">Could not load spools</string>
     <string name="link_spoolman_spool">Link Spoolman Spool</string>
