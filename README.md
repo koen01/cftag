@@ -30,9 +30,15 @@ CFtag          ──REST──▶   Spoolman  ◀──sync──  CFsync
 
 ## Screenshots
 
-| Main screen | Two-tag write flow |
-|---|---|
-| ![Main screen](docs/screenshot_main.jpg) | ![Write tag flow](docs/screenshot_write_tag.jpg) |
+<p align="center">
+  <img src="docs/ss_main.png" width="22%" alt="Main screen" />
+  <img src="docs/ss_choose.png" width="22%" alt="Assign to spool" />
+  <img src="docs/ss_write.png" width="22%" alt="Write tag flow" />
+  <img src="docs/ss_settings.png" width="22%" alt="Settings" />
+</p>
+<p align="center">
+  <em>Main screen &nbsp;·&nbsp; Assign to spool &nbsp;·&nbsp; Write tag flow &nbsp;·&nbsp; Settings</em>
+</p>
 
 ---
 
@@ -81,8 +87,8 @@ Ships with the Creality filament database. You can download an updated database 
 ### Writing a new spool (with Spoolman)
 
 1. Select **Printer**, **Brand**, **Type**, **Size**, and **Color** from the dropdowns.
-2. Under **SPOOLMAN OPTIONS**, tap **Write & Create Spool**.
-3. Fill in the spool details (vendor, filament name, etc.) and tap **Add**.
+2. Under **SPOOLMAN**, tap **Assign to spool**.
+3. Choose **Create new spool**, fill in the spool details, and tap **Add**.
 4. The spool is created in Spoolman. Tap your first RFID tag to the back of your phone and press **Write Tag 1**.
 5. When prompted, tap your second tag and press **Write Tag 2**.
 6. Done — both tags are written and linked to the Spoolman spool.
@@ -90,15 +96,13 @@ Ships with the Creality filament database. You can download an updated database 
 ### Linking an existing Spoolman spool
 
 1. Select the filament options for this spool.
-2. Under **SPOOLMAN OPTIONS**, select the spool from the **Spoolman** dropdown.
-3. Tap **Link to Existing Spool**.
+2. Under **SPOOLMAN**, tap **Assign to spool** → **Link existing spool**.
+3. Pick the spool from the list (searchable by name or vendor).
 4. Follow the Tag 1 / Tag 2 prompts as above.
 
 ### Reading a tag
 
 Tap **Read** with an NFC tag near the back of your phone (or enable auto-read in settings to have it read automatically on tag discovery).
-
----
 
 ---
 
